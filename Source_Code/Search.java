@@ -131,13 +131,20 @@ public class Search {
                 // Looping semua kata yang ada di file
                 while (sc.hasNext()) {
                     String kata = sc.next(); // Memanggil fungsi preProcessing untuk memproses kata
-                    if (stopwords.contains(kata)) { // Cek apakah kata termasuk stop word atau tidak
+                    
+                    // Pre processing sederhana
+                    kata = preProcessing(kata);
+
+                    // Cek apakah kata termasuk stop word atau tidak
+                    if (stopwords.contains(kata)) { 
                         continue; // Jika termasuk stop word, lewati kata tersebut
                     }
-                    // Pre processing
-                    kata = preProcessing(kata);
+
                     // Masukkan kata ke porter stemmer untuk mendapatkan bentuk dasar kata
                     kata = Stemmer.doPorterStemmer(kata);
+                    if (kata.equals("")) {
+                        continue; // Jika kata setelah pre processing dan porter stemmer menjadi kosong, lewati kata tersebut
+                    }
 
                     // Memakai LinkedList untuk menyimpan nama file yang mengandung kata tersebut
                     LinkedList<Integer> tempList;
