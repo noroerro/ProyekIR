@@ -4,7 +4,6 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.util.Scanner;
 import java.util.Set;
-import java.util.TreeMap;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -33,10 +32,10 @@ public class Search {
             invertedIndex = createInvertedIndex(files, fileIndex);
             // file index tidak di return karena mengirim alamat file ke fungsi
             // createInvertedIndex, sehingga tidak perlu dikembalikan lagi
-
         } catch (Exception e) {
             System.out.println("Error : " + e.getMessage());
         }
+
         System.out.println("File Index : " + fileIndex);
         System.out.println("Inverted Index : " + invertedIndex);
 
@@ -124,7 +123,7 @@ public class Search {
 
             if (isVowel && isNextConsonant) {
                 count++;
-                // i++;
+                i++; // Melompati karakter berikutnya karena sudah dihitung sebagai satu VC
                 // (misal: "aba" = 1 VC)
             }
         }
