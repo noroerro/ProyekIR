@@ -104,18 +104,19 @@ public class Stemmer {
                 word = word.substring(0, word.length() - 3);
             }
 
+            // Part 2
+            if (word.endsWith("at") || word.endsWith("bl") || word.endsWith("iz")) {
+                word = word + "e";
+            } else if (conditionDoubleKonsonan(word)
+                    && !(word.endsWith("l") || word.endsWith("s") || word.endsWith("z"))) {
+                // Jika kata adalah berakhir ganda kecuali l s z -> (hapus huruf terakhir)
+                word = word.substring(0, word.length() - 1);
+            } else if (hitungM(word) == 1 && isCVC(word)) {
+                // Jika kata memiliki satu VC dan berakhir dengan pola CVC -> tambahkan "e"
+                word = word + "e";
+            }
         }
-        // Part 2
-        if (word.endsWith("at") || word.endsWith("bl") || word.endsWith("iz")) {
-            word = word + "e";
-        } else if (conditionDoubleKonsonan(word)
-                && (word.endsWith("l") || word.endsWith("s") || word.endsWith("z"))) {
-            // Jika kata adalah berakhir ganda kecuali l s z -> (hapus huruf terakhir)
-            word = word.substring(0, word.length() - 1);
-        } else if (hitungM(word) == 1 && isCVC(word)) {
-            // Jika kata memiliki satu VC dan berakhir dengan pola CVC -> tambahkan "e"
-            word = word + "e";
-        }
+
         // Step 1c
         if (conditionV(word) && word.endsWith("y")) {
             // (*v*) y -> (hapus y) + i
@@ -258,8 +259,9 @@ public class Stemmer {
         } else if (word.endsWith("ent") && hitungM(word.substring(0, word.length() - 3)) > 1) {
             // ent -> (hapus total)
             word = word.substring(0, word.length() - 3);
-        } else if ((word.endsWith("s") || word.endsWith("t")) && word.endsWith("ion")
-                && hitungM(word.substring(0, word.length() - 3)) > 1) {
+        } else if (word.endsWith("ion")
+                && hitungM(word.substring(0, word.length() - 3)) > 1
+                && (word.endsWith("sion") || word.endsWith("tion"))) {
             // ion && (*S || * T) -> (hapus total)
             word = word.substring(0, word.length() - 3);
         } else if (word.endsWith("ou") && hitungM(word.substring(0, word.length() - 2)) > 1) {
