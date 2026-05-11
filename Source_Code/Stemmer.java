@@ -311,5 +311,4 @@ public class Stemmer {
         // Mengembalikan kata yang sudah melalui proses stemming
         return word;
     }
-
 }

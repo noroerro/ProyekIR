@@ -2,21 +2,18 @@ package Source_Code;
 
 import java.io.File;
 import java.io.FileNotFoundException;
-import java.util.Scanner;
-import java.util.Set;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
+import java.util.Scanner;
+import java.util.Set;
 
 public class Search {
     // Stop Word
     public static Set<String> stopwords = new HashSet<>(Arrays.asList(
             "a", "an", "and", "are", "as", "at", "be", "by", "for", "from",
             "has", "he", "in", "is", "it", "its", "of", "on", "that", "the", "to", "was", "were", "will", "with"));
-
-    // public static Set<Character> vowels = new HashSet<>(Arrays.asList('a', 'e',
-    // 'i', 'o', 'u'));
 
     public static void main(String[] args) {
         String path = "./Dokumen"; // Ganti dengan path folder dokumen yang sesuai
@@ -41,6 +38,11 @@ public class Search {
         Scanner sc = new Scanner(System.in);
         System.out.print("\nMasukkan kata yang ingin dicari: ");
         String query = sc.nextLine();
+
+        BooleanQueryParser bqp = new BooleanQueryParser(invertedIndex);
+        System.out.println("TOKENIZE:" + Arrays.toString(bqp.tokenize(query)));
+        System.out.println("HASIL POSTFIX: " + Arrays.toString(bqp.infixToPostfix(bqp.tokenize(query))));
+        System.out.println("HASIL QUERY: " + bqp.evaluatePostfix(bqp.infixToPostfix(bqp.tokenize(query))).toString());
         sc.close();
 
         // Query dimasukkan ke dalam array (setiap kata yang dipisah oleh spasi akan
