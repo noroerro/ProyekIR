@@ -15,7 +15,8 @@ public class Search {
             "a", "an", "and", "are", "as", "at", "be", "by", "for", "from",
             "has", "he", "in", "is", "it", "its", "of", "on", "that", "the", "to", "was", "were", "will", "with"));
 
-    //public static Set<Character> vowels = new HashSet<>(Arrays.asList('a', 'e', 'i', 'o', 'u'));
+    // public static Set<Character> vowels = new HashSet<>(Arrays.asList('a', 'e',
+    // 'i', 'o', 'u'));
 
     public static void main(String[] args) {
         String path = "./Dokumen"; // Ganti dengan path folder dokumen yang sesuai
@@ -32,40 +33,44 @@ public class Search {
             invertedIndex = createInvertedIndex(files, fileIndex);
             // file index tidak di return karena mengirim alamat file ke fungsi
             // createInvertedIndex, sehingga tidak perlu dikembalikan lagi
-
         } catch (Exception e) {
             System.out.println("Error : " + e.getMessage());
         }
-        System.out.println("File Index : " + fileIndex);
-        System.out.println("Inverted Index : " + invertedIndex);
 
-        // Scanner untuk query yang ingin dicari 
+        // Scanner untuk query yang ingin dicari
         Scanner sc = new Scanner(System.in);
         System.out.print("\nMasukkan kata yang ingin dicari: ");
         String query = sc.nextLine();
         sc.close();
 
-        // Query dimasukkan ke dalam array (setiap kata yang dipisah oleh spasi akan dimasukkan ke array)
+        // Query dimasukkan ke dalam array (setiap kata yang dipisah oleh spasi akan
+        // dimasukkan ke array)
         String[] daftarKata = query.split("\\s+");
-        String hasilPreProcessing = "";
 
         // Looping untuk setiap kata yang ada di query (di array daftarKata)
-        for(String kata: daftarKata){
-            // Setiap kata yang ada di query akan dilakukan preProcessing dan porterStemmer dahulu
+        for (String kata : daftarKata) {
+            String hasilPreProcessing = "";
+
+            // Setiap kata yang ada di query akan dilakukan preProcessing dan porterStemmer
+            // dahulu
             kata = preProcessing(kata);
             kata = Stemmer.doPorterStemmer(kata);
 
-            // Jika di inverted index terdapat kata pada query, maka hasil pre processing adalah kata tersebut
-            if(invertedIndex.containsKey(kata)){
+            // Jika di inverted index terdapat kata pada query, maka hasil pre processing
+            // adalah kata tersebut
+            if (invertedIndex.containsKey(kata)) {
                 hasilPreProcessing = kata;
-            } else{ // Jika di inverted index tidak ada kata pada query, maka akan dihitung edit distance antara kata pada query dengan 
-                    // setiap kata di inverted index, lalu hasil pre processing adalah kata yang memiliki edit distance paling kecil dengan kata pada query
+            } else { // Jika di inverted index tidak ada kata pada query, maka akan dihitung edit
+                     // distance antara kata pada query dengan
+                     // setiap kata di inverted index, lalu hasil pre processing adalah kata yang
+                     // memiliki edit distance paling kecil dengan kata pada query
                 int minDistance = Integer.MAX_VALUE;
 
                 // Looping ke semua kata (keys) di inverted index
                 for (String kataDiIndex : invertedIndex.keySet()) {
-                    
-                    // Panggil fungsi edit distance untuk menghitung jarak edit distance antara kata pada query dengan kata di index
+
+                    // Panggil fungsi edit distance untuk menghitung jarak edit distance antara kata
+                    // pada query dengan kata di index
                     int jarak = LevenshteinDistance.hitungEditDistance(kata, kataDiIndex);
                     // Update jika nemu jarak yang lebih kecil
                     if (jarak < minDistance) {
@@ -74,23 +79,28 @@ public class Search {
                     }
                 }
             }
-            
+
             // Cek jika hasil preProcessing tidak kosong
             if (!hasilPreProcessing.equals("")) {
-                // Jika hasil preProcessing sama dengan kata pada query, maka kata tersebut ditemukan pada indeks
-                if(hasilPreProcessing.equals(kata)){
-                    // Ini ntar bisa dihapus aja, ini cuma buat ngecek hasil preProcessing nya aja 
+                // Jika hasil preProcessing sama dengan kata pada query, maka kata tersebut
+                // ditemukan pada indeks
+                if (hasilPreProcessing.equals(kata)) {
+                    // Ini ntar bisa dihapus aja, ini cuma buat ngecek hasil preProcessing nya aja
                     System.out.println("Query: '" + kata + "' ditemukan.");
                     System.out.println("Dokumen: " + invertedIndex.get(hasilPreProcessing));
-                } else { //jika hasil preProcessing tidak sama dengan kata pada query, maka kata tersebut tidak ada pada indeks
-                         // dan hasil preProcessing adalah perhitungan dan kata rekomendasi dari edit distance
+                } else { // jika hasil preProcessing tidak sama dengan kata pada query, maka kata
+                         // tersebut tidak ada pada indeks
+                         // dan hasil preProcessing adalah perhitungan dan kata rekomendasi dari edit
+                         // distance
 
-                    // Ini ntar bisa dihapus aja, ini cuma buat ngecek hasil + biar gampang nanti cek boolean model nya
+                    // Ini ntar bisa dihapus aja, ini cuma buat ngecek hasil + biar gampang nanti
+                    // cek boolean model nya
                     System.out.println("Query: '" + kata + "' tidak ditemukan.");
                     System.out.println("Did you mean '" + hasilPreProcessing + "'?");
                     System.out.println("Dokumen: " + invertedIndex.get(hasilPreProcessing));
                 }
-            } else { // Jika hasil preProcessing kosong, maka kata pada query tidak ditemukan dan tidak ada rekomendasi dari edit distance
+            } else { // Jika hasil preProcessing kosong, maka kata pada query tidak ditemukan dan
+                     // tidak ada rekomendasi dari edit distance
                 System.out.printf("Kata '%s' tidak ditemukan di indeks.\n", kata);
             }
         }
@@ -131,19 +141,20 @@ public class Search {
                 // Looping semua kata yang ada di file
                 while (sc.hasNext()) {
                     String kata = sc.next(); // Memanggil fungsi preProcessing untuk memproses kata
-                    
+
                     // Pre processing sederhana
                     kata = preProcessing(kata);
 
                     // Cek apakah kata termasuk stop word atau tidak
-                    if (stopwords.contains(kata)) { 
+                    if (stopwords.contains(kata)) {
                         continue; // Jika termasuk stop word, lewati kata tersebut
                     }
 
                     // Masukkan kata ke porter stemmer untuk mendapatkan bentuk dasar kata
                     kata = Stemmer.doPorterStemmer(kata);
                     if (kata.equals("")) {
-                        continue; // Jika kata setelah pre processing dan porter stemmer menjadi kosong, lewati kata tersebut
+                        continue; // Jika kata setelah pre processing dan porter stemmer menjadi kosong, lewati
+                                  // kata tersebut
                     }
 
                     // Memakai LinkedList untuk menyimpan nama file yang mengandung kata tersebut
