@@ -5,9 +5,9 @@ import java.util.HashSet;
 import java.util.Set;
 
 public class Stemmer {
-        public static Set<Character> vowels = new HashSet<>(Arrays.asList('a', 'e', 'i', 'o', 'u'));
+    public static Set<Character> vowels = new HashSet<>(Arrays.asList('a', 'e', 'i', 'o', 'u'));
 
-        public static int hitungM(String word) {
+    public static int hitungM(String word) {
         if (word == null || word.length() < 2) {
             return 0;
         }
@@ -309,13 +309,4 @@ public class Stemmer {
         // Mengembalikan kata yang sudah melalui proses stemming
         return word;
     }
-
-    // public static String porterStemmer(String word) {
-        
-
-        
-
-        
-    //}
-
 }
