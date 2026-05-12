@@ -30,6 +30,13 @@ public class Search {
             invertedIndex = createInvertedIndex(files, fileIndex);
             // file index tidak di return karena mengirim alamat file ke fungsi
             // createInvertedIndex, sehingga tidak perlu dikembalikan lagi
+
+            // Test Print (Uncomment untuk melihat hasil)
+            // System.out.println("=== File Index ===");
+            // fileIndex.forEach((key, value) -> System.out.println(key + " : " + value));
+
+            // System.out.println("\n=== Inverted Index ===");
+            // invertedIndex.forEach((key, value) -> System.out.println(key + " : " + value));
         } catch (Exception e) {
             System.out.println("Error : " + e.getMessage());
         }
@@ -52,13 +59,13 @@ public class Search {
         // Looping untuk setiap kata yang ada di query (di array daftarKata)
         for (String kata : daftarKata) {
             String hasilPreProcessing = "";
-            
+
             // Setiap kata yang ada di query akan dilakukan preProcessing dan porterStemmer
             // dahulu
             kata = preProcessing(kata);
 
-            //Buang kata boolean seperti not and or
-            if (kata.equals("and")||kata.equals("or")||kata.equals("not")) {
+            // Buang kata boolean seperti not and or
+            if (kata.equals("and") || kata.equals("or") || kata.equals("not")) {
                 continue;
             }
 
