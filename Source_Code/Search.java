@@ -12,8 +12,10 @@ import java.util.Set;
 public class Search {
     // Stop Word
     public static Set<String> stopwords = new HashSet<>(Arrays.asList(
-            "a", "an", "and", "are", "as", "at", "be", "by", "for", "from",
-            "has", "he", "in", "is", "it", "its", "of", "on", "that", "the", "to", "was", "were", "will", "with"));
+            "a", "an", "as", "at", "be", "by", "for", "from",
+            "has", "he", "in", "is", "it", "its", "of", "on",
+            "that", "the", "to", "was", "were", "will", "with",
+            "this", "which", "who", "whom", "there", "their"));
 
     public static void main(String[] args) {
         String path = "./Dokumen"; // Ganti dengan path folder dokumen yang sesuai
@@ -36,18 +38,19 @@ public class Search {
             // fileIndex.forEach((key, value) -> System.out.println(key + " : " + value));
 
             // System.out.println("\n=== Inverted Index ===");
-            // invertedIndex.forEach((key, value) -> System.out.println(key + " : " + value));
+            // invertedIndex.forEach((key, value) -> System.out.println(key + " : " +
+            // value));
         } catch (Exception e) {
             System.out.println("Error : " + e.getMessage());
         }
 
         // Scanner untuk query yang ingin dicari
         Scanner sc = new Scanner(System.in);
-        while(true){
+        while (true) {
             System.out.print("\nMasukkan kata yang ingin dicari: ");
             String query = sc.nextLine();
 
-            if(query.equals("-1")){
+            if (query.equals("-1")) {
                 System.out.println("Program berhasil diberhentikan");
                 break;
             }
@@ -55,7 +58,8 @@ public class Search {
             BooleanQueryParser bqp = new BooleanQueryParser(invertedIndex);
             System.out.println("TOKENIZE:" + Arrays.toString(bqp.tokenize(query)));
             System.out.println("HASIL POSTFIX: " + Arrays.toString(bqp.infixToPostfix(bqp.tokenize(query))));
-            System.out.println("HASIL QUERY: " + bqp.evaluatePostfix(bqp.infixToPostfix(bqp.tokenize(query))).toString());
+            System.out
+                    .println("HASIL QUERY: " + bqp.evaluatePostfix(bqp.infixToPostfix(bqp.tokenize(query))).toString());
 
             // Query dimasukkan ke dalam array (setiap kata yang dipisah oleh spasi akan
             // dimasukkan ke array)
@@ -81,9 +85,9 @@ public class Search {
                 if (invertedIndex.containsKey(kata)) {
                     hasilPreProcessing = kata;
                 } else { // Jika di inverted index tidak ada kata pada query, maka akan dihitung edit
-                        // distance antara kata pada query dengan
-                        // setiap kata di inverted index, lalu hasil pre processing adalah kata yang
-                        // memiliki edit distance paling kecil dengan kata pada query
+                         // distance antara kata pada query dengan
+                         // setiap kata di inverted index, lalu hasil pre processing adalah kata yang
+                         // memiliki edit distance paling kecil dengan kata pada query
                     int minDistance = Integer.MAX_VALUE;
 
                     // Looping ke semua kata (keys) di inverted index
@@ -110,9 +114,9 @@ public class Search {
                         System.out.println("Kata: '" + kata + "' ditemukan.");
                         System.out.println("Dokumen: " + invertedIndex.get(hasilPreProcessing));
                     } else { // jika hasil preProcessing tidak sama dengan kata pada query, maka kata
-                            // tersebut tidak ada pada indeks
-                            // dan hasil preProcessing adalah perhitungan dan kata rekomendasi dari edit
-                            // distance
+                             // tersebut tidak ada pada indeks
+                             // dan hasil preProcessing adalah perhitungan dan kata rekomendasi dari edit
+                             // distance
 
                         // Ini ntar bisa dihapus aja, ini cuma buat ngecek hasil + biar gampang nanti
                         // cek boolean model nya
@@ -121,7 +125,7 @@ public class Search {
                         System.out.println("Dokumen: " + invertedIndex.get(hasilPreProcessing));
                     }
                 } else { // Jika hasil preProcessing kosong, maka kata pada query tidak ditemukan dan
-                        // tidak ada rekomendasi dari edit distance
+                         // tidak ada rekomendasi dari edit distance
                     System.out.println("==============================");
                     System.out.printf("Kata '%s' tidak ditemukan di indeks.\n", kata);
                 }
