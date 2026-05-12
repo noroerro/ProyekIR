@@ -52,10 +52,16 @@ public class Search {
         // Looping untuk setiap kata yang ada di query (di array daftarKata)
         for (String kata : daftarKata) {
             String hasilPreProcessing = "";
-
+            
             // Setiap kata yang ada di query akan dilakukan preProcessing dan porterStemmer
             // dahulu
             kata = preProcessing(kata);
+
+            //Buang kata boolean seperti not and or
+            if (kata.equals("and")||kata.equals("or")||kata.equals("not")) {
+                continue;
+            }
+
             kata = Stemmer.doPorterStemmer(kata);
 
             // Jika di inverted index terdapat kata pada query, maka hasil pre processing
@@ -88,7 +94,7 @@ public class Search {
                 // ditemukan pada indeks
                 if (hasilPreProcessing.equals(kata)) {
                     // Ini ntar bisa dihapus aja, ini cuma buat ngecek hasil preProcessing nya aja
-                    System.out.println("Query: '" + kata + "' ditemukan.");
+                    System.out.println("Kata: '" + kata + "' ditemukan.");
                     System.out.println("Dokumen: " + invertedIndex.get(hasilPreProcessing));
                 } else { // jika hasil preProcessing tidak sama dengan kata pada query, maka kata
                          // tersebut tidak ada pada indeks
@@ -97,7 +103,7 @@ public class Search {
 
                     // Ini ntar bisa dihapus aja, ini cuma buat ngecek hasil + biar gampang nanti
                     // cek boolean model nya
-                    System.out.println("Query: '" + kata + "' tidak ditemukan.");
+                    System.out.println("Kata: '" + kata + "' tidak ditemukan.");
                     System.out.println("Did you mean '" + hasilPreProcessing + "'?");
                     System.out.println("Dokumen: " + invertedIndex.get(hasilPreProcessing));
                 }

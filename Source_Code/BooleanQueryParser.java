@@ -14,7 +14,7 @@ public class BooleanQueryParser {
     public BooleanQueryParser(HashMap<String, LinkedList<Integer>> invertedIndex) {
         this.invertedIndex = invertedIndex;
         docAll = getAllDocIds();
-        System.out.println("ALL DOCS: " + docAll.toString());
+        // System.out.println("ALL DOCS: " + docAll.toString());
     }
 
     public String[] tokenize(String query) {
