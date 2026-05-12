@@ -102,6 +102,7 @@ public class Search {
 
                 // Cek jika hasil preProcessing tidak kosong
                 if (!hasilPreProcessing.equals("")) {
+                    System.out.println("==============================");
                     // Jika hasil preProcessing sama dengan kata pada query, maka kata tersebut
                     // ditemukan pada indeks
                     if (hasilPreProcessing.equals(kata)) {
@@ -121,6 +122,7 @@ public class Search {
                     }
                 } else { // Jika hasil preProcessing kosong, maka kata pada query tidak ditemukan dan
                         // tidak ada rekomendasi dari edit distance
+                    System.out.println("==============================");
                     System.out.printf("Kata '%s' tidak ditemukan di indeks.\n", kata);
                 }
             }
