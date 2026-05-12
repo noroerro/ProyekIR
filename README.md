@@ -14,6 +14,7 @@ Terdapat 2 cara untuk menjalankan program:
 2. Klik file `Search.java`.
 3. Setelah file `Search.java` terbuka, klik tombol play (Run Java di bagian kanan atas).
 4. Ketik query yang ingin Anda cari di terminal.
+5. Ketik -1 untuk memberhentikan program
 
 ### 2. Menggunakan Terminal
 1. Buka terminal.
@@ -24,4 +25,9 @@ Terdapat 2 cara untuk menjalankan program:
 4. Setelah itu, jalankan program dengan mengetik:
    ```bash
    java Source_Code.Search
-6. Ketik query yang ingin Anda cari di terminal.
+5. Ketik query yang ingin Anda cari di terminal.
+6. Ketik -1 untuk memberhentikan program
+
+## Panduan Query
+
+Pada sistem input query, setiap kata yang dimasukkan harus dihubungkan menggunakan operator boolean seperti AND, OR, atau NOT. Untuk menentukan prioritas pencarian, tanda kurung () digunakan agar query/kata di dalamnya diproses terlebih dahulu. Sebagai contoh, pada query (plane OR phase) AND paper, sistem akan memproses bagian (plane OR phase) terlebih dahulu, kemudian hasilnya dikombinasikan dengan kata paper menggunakan operator AND.
