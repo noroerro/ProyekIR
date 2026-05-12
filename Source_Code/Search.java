@@ -43,82 +43,89 @@ public class Search {
 
         // Scanner untuk query yang ingin dicari
         Scanner sc = new Scanner(System.in);
-        System.out.print("\nMasukkan kata yang ingin dicari: ");
-        String query = sc.nextLine();
+        while(true){
+            System.out.print("\nMasukkan kata yang ingin dicari: ");
+            String query = sc.nextLine();
 
-        BooleanQueryParser bqp = new BooleanQueryParser(invertedIndex);
-        System.out.println("TOKENIZE:" + Arrays.toString(bqp.tokenize(query)));
-        System.out.println("HASIL POSTFIX: " + Arrays.toString(bqp.infixToPostfix(bqp.tokenize(query))));
-        System.out.println("HASIL QUERY: " + bqp.evaluatePostfix(bqp.infixToPostfix(bqp.tokenize(query))).toString());
-        sc.close();
-
-        // Query dimasukkan ke dalam array (setiap kata yang dipisah oleh spasi akan
-        // dimasukkan ke array)
-        String[] daftarKata = query.split("\\s+");
-
-        // Looping untuk setiap kata yang ada di query (di array daftarKata)
-        for (String kata : daftarKata) {
-            String hasilPreProcessing = "";
-
-            // Setiap kata yang ada di query akan dilakukan preProcessing dan porterStemmer
-            // dahulu
-            kata = preProcessing(kata);
-
-            // Buang kata boolean seperti not and or
-            if (kata.equals("and") || kata.equals("or") || kata.equals("not")) {
-                continue;
+            if(query.equals("-1")){
+                System.out.println("Program berhasil diberhentikan");
+                break;
             }
 
-            kata = Stemmer.doPorterStemmer(kata);
+            BooleanQueryParser bqp = new BooleanQueryParser(invertedIndex);
+            System.out.println("TOKENIZE:" + Arrays.toString(bqp.tokenize(query)));
+            System.out.println("HASIL POSTFIX: " + Arrays.toString(bqp.infixToPostfix(bqp.tokenize(query))));
+            System.out.println("HASIL QUERY: " + bqp.evaluatePostfix(bqp.infixToPostfix(bqp.tokenize(query))).toString());
 
-            // Jika di inverted index terdapat kata pada query, maka hasil pre processing
-            // adalah kata tersebut
-            if (invertedIndex.containsKey(kata)) {
-                hasilPreProcessing = kata;
-            } else { // Jika di inverted index tidak ada kata pada query, maka akan dihitung edit
-                     // distance antara kata pada query dengan
-                     // setiap kata di inverted index, lalu hasil pre processing adalah kata yang
-                     // memiliki edit distance paling kecil dengan kata pada query
-                int minDistance = Integer.MAX_VALUE;
+            // Query dimasukkan ke dalam array (setiap kata yang dipisah oleh spasi akan
+            // dimasukkan ke array)
+            String[] daftarKata = query.split("\\s+");
 
-                // Looping ke semua kata (keys) di inverted index
-                for (String kataDiIndex : invertedIndex.keySet()) {
+            // Looping untuk setiap kata yang ada di query (di array daftarKata)
+            for (String kata : daftarKata) {
+                String hasilPreProcessing = "";
 
-                    // Panggil fungsi edit distance untuk menghitung jarak edit distance antara kata
-                    // pada query dengan kata di index
-                    int jarak = LevenshteinDistance.hitungEditDistance(kata, kataDiIndex);
-                    // Update jika nemu jarak yang lebih kecil
-                    if (jarak < minDistance) {
-                        minDistance = jarak;
-                        hasilPreProcessing = kataDiIndex;
+                // Setiap kata yang ada di query akan dilakukan preProcessing dan porterStemmer
+                // dahulu
+                kata = preProcessing(kata);
+
+                // Buang kata boolean seperti not and or
+                if (kata.equals("and") || kata.equals("or") || kata.equals("not")) {
+                    continue;
+                }
+
+                kata = Stemmer.doPorterStemmer(kata);
+
+                // Jika di inverted index terdapat kata pada query, maka hasil pre processing
+                // adalah kata tersebut
+                if (invertedIndex.containsKey(kata)) {
+                    hasilPreProcessing = kata;
+                } else { // Jika di inverted index tidak ada kata pada query, maka akan dihitung edit
+                        // distance antara kata pada query dengan
+                        // setiap kata di inverted index, lalu hasil pre processing adalah kata yang
+                        // memiliki edit distance paling kecil dengan kata pada query
+                    int minDistance = Integer.MAX_VALUE;
+
+                    // Looping ke semua kata (keys) di inverted index
+                    for (String kataDiIndex : invertedIndex.keySet()) {
+
+                        // Panggil fungsi edit distance untuk menghitung jarak edit distance antara kata
+                        // pada query dengan kata di index
+                        int jarak = LevenshteinDistance.hitungEditDistance(kata, kataDiIndex);
+                        // Update jika nemu jarak yang lebih kecil
+                        if (jarak < minDistance) {
+                            minDistance = jarak;
+                            hasilPreProcessing = kataDiIndex;
+                        }
                     }
                 }
-            }
 
-            // Cek jika hasil preProcessing tidak kosong
-            if (!hasilPreProcessing.equals("")) {
-                // Jika hasil preProcessing sama dengan kata pada query, maka kata tersebut
-                // ditemukan pada indeks
-                if (hasilPreProcessing.equals(kata)) {
-                    // Ini ntar bisa dihapus aja, ini cuma buat ngecek hasil preProcessing nya aja
-                    System.out.println("Kata: '" + kata + "' ditemukan.");
-                    System.out.println("Dokumen: " + invertedIndex.get(hasilPreProcessing));
-                } else { // jika hasil preProcessing tidak sama dengan kata pada query, maka kata
-                         // tersebut tidak ada pada indeks
-                         // dan hasil preProcessing adalah perhitungan dan kata rekomendasi dari edit
-                         // distance
+                // Cek jika hasil preProcessing tidak kosong
+                if (!hasilPreProcessing.equals("")) {
+                    // Jika hasil preProcessing sama dengan kata pada query, maka kata tersebut
+                    // ditemukan pada indeks
+                    if (hasilPreProcessing.equals(kata)) {
+                        // Ini ntar bisa dihapus aja, ini cuma buat ngecek hasil preProcessing nya aja
+                        System.out.println("Kata: '" + kata + "' ditemukan.");
+                        System.out.println("Dokumen: " + invertedIndex.get(hasilPreProcessing));
+                    } else { // jika hasil preProcessing tidak sama dengan kata pada query, maka kata
+                            // tersebut tidak ada pada indeks
+                            // dan hasil preProcessing adalah perhitungan dan kata rekomendasi dari edit
+                            // distance
 
-                    // Ini ntar bisa dihapus aja, ini cuma buat ngecek hasil + biar gampang nanti
-                    // cek boolean model nya
-                    System.out.println("Kata: '" + kata + "' tidak ditemukan.");
-                    System.out.println("Did you mean '" + hasilPreProcessing + "'?");
-                    System.out.println("Dokumen: " + invertedIndex.get(hasilPreProcessing));
+                        // Ini ntar bisa dihapus aja, ini cuma buat ngecek hasil + biar gampang nanti
+                        // cek boolean model nya
+                        System.out.println("Kata: '" + kata + "' tidak ditemukan.");
+                        System.out.println("Did you mean '" + hasilPreProcessing + "'?");
+                        System.out.println("Dokumen: " + invertedIndex.get(hasilPreProcessing));
+                    }
+                } else { // Jika hasil preProcessing kosong, maka kata pada query tidak ditemukan dan
+                        // tidak ada rekomendasi dari edit distance
+                    System.out.printf("Kata '%s' tidak ditemukan di indeks.\n", kata);
                 }
-            } else { // Jika hasil preProcessing kosong, maka kata pada query tidak ditemukan dan
-                     // tidak ada rekomendasi dari edit distance
-                System.out.printf("Kata '%s' tidak ditemukan di indeks.\n", kata);
             }
         }
+        sc.close();
     }
 
     public static File[] getAllFiles(String path) {
