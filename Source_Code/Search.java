@@ -48,7 +48,7 @@ public class Search {
         Scanner sc = new Scanner(System.in);
         while (true) {
             System.out.print("\nMasukkan kata yang ingin dicari: ");
-            String query = sc.nextLine(); 
+            String query = sc.nextLine();
 
             if (query.equals("-1")) {
                 System.out.println("Program berhasil diberhentikan");
@@ -66,10 +66,7 @@ public class Search {
             String[] daftarKata = query.split("\\s+");
 
             // Mendapatkan semua doc ID untuk keperluan NOT (complement)
-            Set<Integer> semuaDocId = new HashSet<>();
-            for (LinkedList<Integer> pl : invertedIndex.values()) {
-                semuaDocId.addAll(pl);
-            }
+            Set<Integer> semuaDocId = new HashSet<>(fileIndex.keySet());
 
             // Flag untuk menandai apakah kata berikutnya di-negasi (NOT)
             boolean isNegated = false;
@@ -128,7 +125,8 @@ public class Search {
                     LinkedList<Integer> postingList = invertedIndex.get(hasilPreProcessing);
 
                     if (isNegated) {
-                        // Jika di-negasi (NOT), ambil semua dokumen SELAIN yang mengandung kata tersebut
+                        // Jika di-negasi (NOT), ambil semua dokumen SELAIN yang mengandung kata
+                        // tersebut
                         Set<Integer> hasilNot = new HashSet<>(semuaDocId);
                         if (postingList != null) {
                             hasilNot.removeAll(postingList);
@@ -136,11 +134,13 @@ public class Search {
                         LinkedList<Integer> sortedResult = new LinkedList<>(new java.util.TreeSet<>(hasilNot));
 
                         if (hasilPreProcessing.equals(kata)) {
-                            System.out.println("NOT Kata: '" + kata + "' — menampilkan dokumen yang TIDAK mengandung kata ini.");
+                            System.out.println(
+                                    "NOT Kata: '" + kata + "' — menampilkan dokumen yang TIDAK mengandung kata ini.");
                         } else {
                             System.out.println("Kata: '" + kata + "' tidak ditemukan.");
                             System.out.println("Did you mean '" + hasilPreProcessing + "'?");
-                            System.out.println("NOT '" + hasilPreProcessing + "' — menampilkan dokumen yang TIDAK mengandung kata ini.");
+                            System.out.println("NOT '" + hasilPreProcessing
+                                    + "' — menampilkan dokumen yang TIDAK mengandung kata ini.");
                         }
                         System.out.println("Dokumen: " + sortedResult);
                     } else {
