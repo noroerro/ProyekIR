@@ -48,7 +48,7 @@ public class Search {
         Scanner sc = new Scanner(System.in);
         while (true) {
             System.out.print("\nMasukkan kata yang ingin dicari: ");
-            String query = sc.nextLine();
+            String query = sc.nextLine(); 
 
             if (query.equals("-1")) {
                 System.out.println("Program berhasil diberhentikan");
@@ -65,6 +65,15 @@ public class Search {
             // dimasukkan ke array)
             String[] daftarKata = query.split("\\s+");
 
+            // Mendapatkan semua doc ID untuk keperluan NOT (complement)
+            Set<Integer> semuaDocId = new HashSet<>();
+            for (LinkedList<Integer> pl : invertedIndex.values()) {
+                semuaDocId.addAll(pl);
+            }
+
+            // Flag untuk menandai apakah kata berikutnya di-negasi (NOT)
+            boolean isNegated = false;
+
             // Looping untuk setiap kata yang ada di query (di array daftarKata)
             for (String kata : daftarKata) {
                 String hasilPreProcessing = "";
@@ -73,8 +82,15 @@ public class Search {
                 // dahulu
                 kata = preProcessing(kata);
 
-                // Buang kata boolean seperti not and or
-                if (kata.equals("and") || kata.equals("or") || kata.equals("not")) {
+                // Buang kata boolean seperti and or, tapi tangani not secara khusus
+                if (kata.equals("and") || kata.equals("or")) {
+                    isNegated = false; // reset negasi jika ketemu AND/OR
+                    continue;
+                }
+
+                // Jika kata adalah "not", set flag negasi untuk kata berikutnya
+                if (kata.equals("not")) {
+                    isNegated = true;
                     continue;
                 }
 
@@ -107,28 +123,52 @@ public class Search {
                 // Cek jika hasil preProcessing tidak kosong
                 if (!hasilPreProcessing.equals("")) {
                     System.out.println("==============================");
-                    // Jika hasil preProcessing sama dengan kata pada query, maka kata tersebut
-                    // ditemukan pada indeks
-                    if (hasilPreProcessing.equals(kata)) {
-                        // Ini ntar bisa dihapus aja, ini cuma buat ngecek hasil preProcessing nya aja
-                        System.out.println("Kata: '" + kata + "' ditemukan.");
-                        System.out.println("Dokumen: " + invertedIndex.get(hasilPreProcessing));
-                    } else { // jika hasil preProcessing tidak sama dengan kata pada query, maka kata
-                             // tersebut tidak ada pada indeks
-                             // dan hasil preProcessing adalah perhitungan dan kata rekomendasi dari edit
-                             // distance
 
-                        // Ini ntar bisa dihapus aja, ini cuma buat ngecek hasil + biar gampang nanti
-                        // cek boolean model nya
-                        System.out.println("Kata: '" + kata + "' tidak ditemukan.");
-                        System.out.println("Did you mean '" + hasilPreProcessing + "'?");
-                        System.out.println("Dokumen: " + invertedIndex.get(hasilPreProcessing));
+                    // Ambil posting list dari kata yang ditemukan
+                    LinkedList<Integer> postingList = invertedIndex.get(hasilPreProcessing);
+
+                    if (isNegated) {
+                        // Jika di-negasi (NOT), ambil semua dokumen SELAIN yang mengandung kata tersebut
+                        Set<Integer> hasilNot = new HashSet<>(semuaDocId);
+                        if (postingList != null) {
+                            hasilNot.removeAll(postingList);
+                        }
+                        LinkedList<Integer> sortedResult = new LinkedList<>(new java.util.TreeSet<>(hasilNot));
+
+                        if (hasilPreProcessing.equals(kata)) {
+                            System.out.println("NOT Kata: '" + kata + "' — menampilkan dokumen yang TIDAK mengandung kata ini.");
+                        } else {
+                            System.out.println("Kata: '" + kata + "' tidak ditemukan.");
+                            System.out.println("Did you mean '" + hasilPreProcessing + "'?");
+                            System.out.println("NOT '" + hasilPreProcessing + "' — menampilkan dokumen yang TIDAK mengandung kata ini.");
+                        }
+                        System.out.println("Dokumen: " + sortedResult);
+                    } else {
+                        // Perilaku normal (tanpa NOT)
+                        if (hasilPreProcessing.equals(kata)) {
+                            // Ini ntar bisa dihapus aja, ini cuma buat ngecek hasil preProcessing nya aja
+                            System.out.println("Kata: '" + kata + "' ditemukan.");
+                            System.out.println("Dokumen: " + postingList);
+                        } else { // jika hasil preProcessing tidak sama dengan kata pada query, maka kata
+                                 // tersebut tidak ada pada indeks
+                                 // dan hasil preProcessing adalah perhitungan dan kata rekomendasi dari edit
+                                 // distance
+
+                            // Ini ntar bisa dihapus aja, ini cuma buat ngecek hasil + biar gampang nanti
+                            // cek boolean model nya
+                            System.out.println("Kata: '" + kata + "' tidak ditemukan.");
+                            System.out.println("Did you mean '" + hasilPreProcessing + "'?");
+                            System.out.println("Dokumen: " + postingList);
+                        }
                     }
                 } else { // Jika hasil preProcessing kosong, maka kata pada query tidak ditemukan dan
                          // tidak ada rekomendasi dari edit distance
                     System.out.println("==============================");
                     System.out.printf("Kata '%s' tidak ditemukan di indeks.\n", kata);
                 }
+
+                // Reset flag negasi setelah memproses kata
+                isNegated = false;
             }
         }
         sc.close();
