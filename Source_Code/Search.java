@@ -65,10 +65,10 @@ public class Search {
             // dimasukkan ke array)
             String[] daftarKata = query.split("\\s+");
 
-            // Mendapatkan semua doc ID untuk keperluan NOT (complement)
+            // Mendapatkan semua doc ID untuk keperluan not
             Set<Integer> semuaDocId = new HashSet<>(fileIndex.keySet());
 
-            // Flag untuk menandai apakah kata berikutnya negasi (NOT)
+            // Flag untuk menandai apakah kata tersebut diikuti negasi(not)
             boolean isNegated = false;
 
             // Looping untuk setiap kata yang ada di query (di array daftarKata)
@@ -79,18 +79,18 @@ public class Search {
                 // dahulu
                 kata = preProcessing(kata);
 
-                // Buang kata boolean seperti and or
+                // Buang kata boolean (and dan or)
                 if (kata.equals("and") || kata.equals("or")) {
                     isNegated = false; // reset negasi jika ketemu AND/OR
                     continue;
                 }
 
-                // Jika kata adalah not, set flag negasi
+                // Jika kata adalah not, maka set negasi jadi true
                 if (kata.equals("not")) {
                     isNegated = true;
                     continue;
                 }
-
+                // Stemmer kata
                 kata = Stemmer.doPorterStemmer(kata);
 
                 // Jika di inverted index terdapat kata pada query, maka hasil pre processing
@@ -124,6 +124,7 @@ public class Search {
                     // Ambil posting list dari kata yang ditemukan
                     LinkedList<Integer> postingList = invertedIndex.get(hasilPreProcessing);
 
+                    // jika kata mengandung negasi (not)
                     if (isNegated) {
                         // Jika di-negasi (not), ambil semua dokumen selain yang mengandung kata
                         // tersebut
@@ -131,20 +132,22 @@ public class Search {
                         if (postingList != null) {
                             hasilNot.removeAll(postingList);
                         }
+                        // Urutkan hasil dokumen not yg ditemukan
                         LinkedList<Integer> sortedResult = new LinkedList<>(new java.util.TreeSet<>(hasilNot));
 
+                        // jika hasil preProcessing ada di inverted index (kondisi not)
                         if (hasilPreProcessing.equals(kata)) {
                             System.out.println(
                                     "Kata NOT '" + kata + "' ditemukan.");
                             System.out.println("Dokumen: " + sortedResult);
-                        } else {
+                        } else {// jika hasil preProcessing tidak ada di inverted index (kondisi not)
                             System.out.println("Kata: '" + kata + "' tidak ditemukan.");
                             System.out.println("Did you mean '" + hasilPreProcessing + "'?");
                             System.out.println("Dokumen yang mengandung NOT '" + hasilPreProcessing
                                     + "'" + sortedResult);
                         }
                     } else {
-                        // jika hasil preprocessing ditemukan
+                        // jika hasil preprocessing ditemukan 
                         if (hasilPreProcessing.equals(kata)) {
                             // Ini ntar bisa dihapus aja, ini cuma buat ngecek hasil preProcessing nya aja
                             System.out.println("Kata: '" + kata + "' ditemukan.");
@@ -166,7 +169,6 @@ public class Search {
                     System.out.println("==============================");
                     System.out.printf("Kata '%s' tidak ditemukan di indeks.\n", kata);
                 }
-
                 // Reset negasi
                 isNegated = false;
             }
