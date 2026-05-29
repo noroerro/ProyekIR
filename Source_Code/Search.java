@@ -2,14 +2,19 @@ package Source_Code;
 
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
+import java.util.List;
 import java.util.Scanner;
 import java.util.Set;
 
 public class Search {
+    // Rata-rata panjang dokumen (Average Document Length)
+    public static double avgDocLength = 0.0;
+
     // Stop Word
     public static Set<String> stopwords = new HashSet<>(Arrays.asList(
             "a", "an", "as", "at", "be", "by", "for", "from",
@@ -24,12 +29,23 @@ public class Search {
         File[] files = getAllFiles(path);
         // 2. Membuat inverted index dari semua file yang ada di folder dokumen
         HashMap<Integer, String> fileIndex = null;
-        HashMap<String, LinkedList<Integer>> invertedIndex = null;
+        HashMap<String, LinkedList<Posting>> invertedIndex = null;
+        HashMap<Integer, Integer> docLength = null;
         try {
             // fileIndex u/ menyimpan nama file sebagai nomor
             fileIndex = new HashMap<>();
+            docLength = new HashMap<>();
             // Inverted Index
-            invertedIndex = createInvertedIndex(files, fileIndex);
+            invertedIndex = createInvertedIndex(files, fileIndex, docLength);
+
+            // Menghitung Rata-rata Panjang Dokumen (Average Document Length)
+            double totalLength = 0;
+            for (int len : docLength.values()) {
+                totalLength += len;
+            }
+            avgDocLength = docLength.isEmpty() ? 0 : totalLength / docLength.size();
+            System.out.println("Proses Indexing Selesai. Rata-rata panjang dokumen: " + avgDocLength);
+
             // file index tidak di return karena mengirim alamat file ke fungsi
             // createInvertedIndex, sehingga tidak perlu dikembalikan lagi
 
@@ -122,7 +138,7 @@ public class Search {
                     System.out.println("==============================");
 
                     // Ambil posting list dari kata yang ditemukan
-                    LinkedList<Integer> postingList = invertedIndex.get(hasilPreProcessing);
+                    LinkedList<Posting> postingList = invertedIndex.get(hasilPreProcessing);
 
                     // jika kata mengandung negasi (not)
                     if (isNegated) {
@@ -147,7 +163,7 @@ public class Search {
                                     + "'" + sortedResult);
                         }
                     } else {
-                        // jika hasil preprocessing ditemukan 
+                        // jika hasil preprocessing ditemukan
                         if (hasilPreProcessing.equals(kata)) {
                             // Ini ntar bisa dihapus aja, ini cuma buat ngecek hasil preProcessing nya aja
                             System.out.println("Kata: '" + kata + "' ditemukan.");
@@ -176,78 +192,147 @@ public class Search {
         sc.close();
     }
 
+    /**
+     * Mendapatkan daftar file di dalam direktori dokumen.
+     */
     public static File[] getAllFiles(String path) {
-        // Mendapatkan semua file yang ada di folder dokumen
         File folder = new File(path);
-        // Mendapatkan semua file yang ada di folder dokumen
-        File[] listFiles = folder.listFiles();
-        return listFiles;
+        return folder.listFiles();
     }
 
+    /**
+     * Melakukan preprocessing pada kata (lowercase, trim, dan hapus tanda baca).
+     *
+     * @param word kata yang akan diproses
+     * @return kata hasil preprocessing yang hanya berisi huruf
+     */
     public static String preProcessing(String word) {
-        // Pre processing sederhana
-        // Mengubah semua menjadi lowercase
-        word = word.toLowerCase();
-        // Menghapus spasi tambahan
-        word = word.trim();
-        // Menghapus tanda baca
-        word = word.replaceAll("[^a-zA-Z]", "");
-        return word;
+        word = word.toLowerCase().trim();
+        return word.replaceAll("[^a-zA-Z]", "");
     }
 
-    public static HashMap<String, LinkedList<Integer>> createInvertedIndex(File[] files,
-            HashMap<Integer, String> fileIndex) throws FileNotFoundException {
-        HashMap<String, LinkedList<Integer>> invertedIndex = new HashMap<>();
+    /**
+     * Membuat Inverted Index beserta perhitungan Term Frequency (TF) dan Document
+     * Length.
+     *
+     * @param files     array dari file-file dokumen yang akan diindeks
+     * @param fileIndex peta (map) untuk menyimpan pemetaan ID dokumen ke nama file
+     * @param docLength peta (map) untuk menyimpan panjang setiap dokumen
+     * @return inverted index yang memetakan setiap term ke daftar posting-nya
+     * @throws FileNotFoundException jika file dokumen tidak ditemukan
+     */
+    public static HashMap<String, LinkedList<Posting>> createInvertedIndex(File[] files,
+            HashMap<Integer, String> fileIndex, HashMap<Integer, Integer> docLength) throws FileNotFoundException {
+        HashMap<String, LinkedList<Posting>> invertedIndex = new HashMap<>();
         Scanner sc;
         int counter = 0;
-        // Looping semua file yang ada di folder dokumen
+
         for (File file : files) {
-            // Bila merupakan sebuah file bertipe teks
             if (file.isFile() && file.getName().endsWith(".txt")) {
-                // Buat scanner untuk membaca file
                 sc = new Scanner(file);
-                counter++; // Menambahkan nomor indeks untuk setiap file
-                fileIndex.put(counter, file.getName()); // Menyimpan nama file dengan nomor indeks
-                // Looping semua kata yang ada di file
+                counter++;
+                fileIndex.put(counter, file.getName());
+                docLength.put(counter, 0);
+
                 while (sc.hasNext()) {
-                    String kata = sc.next(); // Memanggil fungsi preProcessing untuk memproses kata
+                    String kata = preProcessing(sc.next());
 
-                    // Pre processing sederhana
-                    kata = preProcessing(kata);
-
-                    // Cek apakah kata termasuk stop word atau tidak
                     if (stopwords.contains(kata)) {
-                        continue; // Jika termasuk stop word, lewati kata tersebut
+                        continue;
                     }
 
-                    // Masukkan kata ke porter stemmer untuk mendapatkan bentuk dasar kata
                     kata = Stemmer.doPorterStemmer(kata);
-                    if (kata.equals("")) {
-                        continue; // Jika kata setelah pre processing dan porter stemmer menjadi kosong, lewati
-                                  // kata tersebut
+                    if (kata.isEmpty()) {
+                        continue;
                     }
 
-                    // Memakai LinkedList untuk menyimpan nama file yang mengandung kata tersebut
-                    LinkedList<Integer> tempList;
-                    // Bila belum terdapat di inverted index, maka perlu dimasukkan beserta nama
-                    // filenya
+                    // Increment panjang dokumen (hanya kata valid setelah stopword & stemming)
+                    docLength.put(counter, docLength.get(counter) + 1);
+
                     if (!invertedIndex.containsKey(kata)) {
-                        tempList = new LinkedList<>();
-                        // Masukkan nama file ke dalam list
-                        tempList.add(counter);
-                        invertedIndex.put(kata, tempList);
+                        LinkedList<Posting> posting = new LinkedList<>();
+                        posting.add(new Posting(counter, 1));
+                        invertedIndex.put(kata, posting);
                     } else {
-                        if (!invertedIndex.get(kata).contains(counter)) {// Cek apakah nama file sudah ada di
-                                                                         // list atau belum
-                            // Masukkan nama file ke dalam list
-                            invertedIndex.get(kata).add(counter);
+                        LinkedList<Posting> posting = invertedIndex.get(kata);
+                        Posting lastPo = posting.getLast();
+
+                        if (lastPo.getDocId() == counter) {
+                            lastPo.incrementTermFrequency(); // Increment TF jika kata muncul lagi di dokumen yang sama
+                        } else {
+                            posting.add(new Posting(counter, 1)); // Buat posting baru jika di dokumen baru
                         }
                     }
                 }
+                sc.close();
             }
         }
 
         return invertedIndex;
+    }
+
+    /**
+     * Membersihkan query dari stopword dan melakukan stemming pada setiap kata di
+     * dalamnya.
+     *
+     * @param query string query asli yang dimasukkan oleh pengguna
+     * @return daftar kata (terms) yang sudah bersih dari stopword dan telah di-stem
+     */
+    public static List<String> getQueryClean(String query) {
+        String[] daftarKata = query.split(" ");
+        List<String> kataBersih = new ArrayList<>();
+
+        for (String kata : daftarKata) {
+            kata = preProcessing(kata);
+            if (stopwords.contains(kata) || kata.isEmpty()) {
+                continue;
+            }
+            kata = Stemmer.doPorterStemmer(kata);
+            if (!kata.isEmpty()) {
+                kataBersih.add(kata);
+            }
+        }
+        return kataBersih;
+    }
+
+    /**
+     * Menghitung skor kemiripan dokumen terhadap query menggunakan Binary
+     * Independence Model (BIM).
+     *
+     * @param query         string query yang dicari
+     * @param invertedIndex inverted index dari koleksi dokumen
+     * @param fileIndex     pemetaan antara ID dokumen dengan nama filenya
+     */
+    public static void hitungBIM(String query, HashMap<String, LinkedList<Posting>> invertedIndex,
+            HashMap<Integer, String> fileIndex) {
+        List<String> queryTerms = getQueryClean(query);
+
+        if (queryTerms.isEmpty()) {
+            System.out.println("Query tidak valid atau hanya berisi stopword.");
+            return;
+        }
+
+        int N = fileIndex.size();
+        HashMap<Integer, Double> docScores = new HashMap<>();
+
+        for (String term : queryTerms) {
+
+            if (!invertedIndex.containsKey(term)) {
+                continue;
+            }
+
+            LinkedList<Posting> postings = invertedIndex.get(term);
+            int df = postings.size();
+
+            double weight = Math.log((N - df + 0.5) / (df + 0.5));
+            // double weight = Math.log((N - df)/df);
+
+            for (Posting posting : postings) {
+                int docId = posting.getDocId();
+                docScores.put(docId, docScores.getOrDefault(docId, 0.0) + weight);
+            }
+        }
+
     }
 
 }

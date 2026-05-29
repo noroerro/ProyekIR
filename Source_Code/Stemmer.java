@@ -4,9 +4,22 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
 
+/**
+ * Kelas Stemmer untuk melakukan proses stemming menggunakan algoritma Porter.
+ */
 public class Stemmer {
+    /**
+     * Kumpulan karakter vokal yang digunakan dalam aturan stemming.
+     */
     public static Set<Character> vowels = new HashSet<>(Arrays.asList('a', 'e', 'i', 'o', 'u'));
 
+    /**
+     * Menghitung nilai m (measure) dari sebuah kata.
+     * m adalah jumlah urutan Vokal-Konsonan (VC) pada kata.
+     *
+     * @param word kata yang akan dihitung
+     * @return nilai m dari kata
+     */
     public static int hitungM(String word) {
         if (word == null || word.length() < 2) {
             return 0;
@@ -32,6 +45,13 @@ public class Stemmer {
         return count;
     }
 
+    /**
+     * Mengecek apakah kata diakhiri dengan pola Konsonan-Vokal-Konsonan (CVC),
+     * dan konsonan terakhir bukan 'w', 'x', atau 'y'.
+     *
+     * @param word kata yang akan dicek
+     * @return true jika pola CVC terpenuhi, false sebaliknya
+     */
     public static boolean isCVC(String word) {
         if (word == null || word.length() < 3) {
             return false;
@@ -46,8 +66,13 @@ public class Stemmer {
                 && last != 'w' && last != 'x' && last != 'y';
     }
 
+    /**
+     * Mengecek apakah stem memiliki setidaknya satu vokal.
+     *
+     * @param word stem yang akan dicek
+     * @return true jika menemukan setidaknya satu vokal, false sebaliknya
+     */
     public static boolean conditionV(String word) {
-        // Cek apakah stem memiliki setidaknya satu vokal
         if (word == null || word.isEmpty())
             return false;
 
@@ -59,8 +84,13 @@ public class Stemmer {
         return false;
     }
 
+    /**
+     * Mengecek apakah stem berakhir dengan huruf konsonan ganda.
+     *
+     * @param word stem yang akan dicek
+     * @return true jika berakhir dengan konsonan ganda, false sebaliknya
+     */
     public static boolean conditionDoubleKonsonan(String word) {
-        // Cek apakah stem berakhir dengan huruf konsonan ganda
         if (word == null || word.length() < 2)
             return false;
 
@@ -70,11 +100,23 @@ public class Stemmer {
         return last == secondLast && !vowels.contains(last);
     }
 
+    /**
+     * Melakukan stemming pada kata menggunakan algoritma Porter.
+     * Fungsi ini akan memanggil fungsi porterStemmerStep1.
+     *
+     * @param word kata yang akan di-stem
+     * @return kata yang sudah di-stem
+     */
     public static String doPorterStemmer(String word) {
-        // Memanggil fungsi porterStemmerStep1 untuk melakukan stemming pada kata
         return porterStemmerStep1(word);
     }
 
+    /**
+     * Melakukan stemming langkah 1 (Step 1a, 1b, dan 1c).
+     *
+     * @param word kata yang akan diproses
+     * @return hasil stemming langkah 1 yang dilanjutkan ke langkah 2
+     */
     public static String porterStemmerStep1(String word) {
         // Step 1a
         if (word.endsWith("sses")) {
@@ -122,10 +164,15 @@ public class Stemmer {
             // (*v*) y -> (hapus y) + i
             word = word.substring(0, word.length() - 1) + "i";
         }
-        // Memanggil fungsi porterStemmerStep2 untuk melakukan stemming pada kata
         return porterStemmerStep2(word);
     }
 
+    /**
+     * Melakukan stemming langkah 2.
+     *
+     * @param word kata yang akan diproses
+     * @return hasil stemming langkah 2 yang dilanjutkan ke langkah 3
+     */
     public static String porterStemmerStep2(String word) {
         // Step 2
         if (word.endsWith("ational") && hitungM(word.substring(0, word.length() - 7)) > 0) {
@@ -189,10 +236,15 @@ public class Stemmer {
             // biliti -> ble
             word = word.substring(0, word.length() - 5) + "le";
         }
-        // Memanggil fungsi porterStemmerStep3 untuk melakukan stemming pada kata
         return porterStemmerStep3(word);
     }
 
+    /**
+     * Melakukan stemming langkah 3.
+     *
+     * @param word kata yang akan diproses
+     * @return hasil stemming langkah 3 yang dilanjutkan ke langkah 4
+     */
     public static String porterStemmerStep3(String word) {
         // Step 3
         if (word.endsWith("icate") && hitungM(word.substring(0, word.length() - 5)) > 0) {
@@ -220,10 +272,15 @@ public class Stemmer {
             // ness -> (hapus total)
             word = word.substring(0, word.length() - 4);
         }
-        // Memanggil fungsi porterStemmerStep4 untuk melakukan stemming pada kata
         return porterStemmerStep4(word);
     }
 
+    /**
+     * Melakukan stemming langkah 4.
+     *
+     * @param word kata yang akan diproses
+     * @return hasil stemming langkah 4 yang dilanjutkan ke langkah 5
+     */
     public static String porterStemmerStep4(String word) {
         // Step 4 (m > 1)
         if (word.endsWith("al") && hitungM(word.substring(0, word.length() - 2)) > 1) {
@@ -286,10 +343,15 @@ public class Stemmer {
             // ize -> (hapus total)
             word = word.substring(0, word.length() - 3);
         }
-        // Memanggil fungsi porterStemmerStep5 untuk melakukan stemming pada kata
         return porterStemmerStep5(word);
     }
 
+    /**
+     * Melakukan stemming langkah 5.
+     *
+     * @param word kata yang akan diproses
+     * @return hasil akhir stemming
+     */
     public static String porterStemmerStep5(String word) {
         // Step 5a
         if (word.endsWith("e")) {
@@ -308,7 +370,6 @@ public class Stemmer {
             // (*d and *L) -> (hapus satu l)
             word = word.substring(0, word.length() - 1);
         }
-        // Mengembalikan kata yang sudah melalui proses stemming
         return word;
     }
 }
