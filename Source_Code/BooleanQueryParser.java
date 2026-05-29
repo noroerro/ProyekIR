@@ -8,10 +8,10 @@ import java.util.Stack;
 import java.util.TreeSet;
 
 public class BooleanQueryParser {
-    HashMap<String, LinkedList<Integer>> invertedIndex = null;
+    HashMap<String, LinkedList<Posting>> invertedIndex = null;
     LinkedList<Integer> docAll;
 
-    public BooleanQueryParser(HashMap<String, LinkedList<Integer>> invertedIndex) {
+    public BooleanQueryParser(HashMap<String, LinkedList<Posting>> invertedIndex) {
         this.invertedIndex = invertedIndex;
         docAll = getAllDocIds();
         // System.out.println("ALL DOCS: " + docAll.toString());
@@ -138,11 +138,15 @@ public class BooleanQueryParser {
                 // jika term tidak ditemukan di posting list, maka masukkan posting list kosong
                 token = token.toLowerCase().replaceAll("[^a-zA-Z]", "");
                 token = Stemmer.doPorterStemmer(token);
-                LinkedList<Integer> pl = invertedIndex.get(token);
+                LinkedList<Posting> pl = invertedIndex.get(token);
                 if (pl == null) {
                     temp.push(new LinkedList<>());
                 } else {
-                    temp.push(pl);
+                    LinkedList<Integer> docIds = new LinkedList<>();
+                    for (Posting p : pl) {
+                        docIds.add(p.getDocId());
+                    }
+                    temp.push(docIds);
                 }
             }
         }
@@ -254,8 +258,10 @@ public class BooleanQueryParser {
     // complement
     public LinkedList<Integer> getAllDocIds() {
         TreeSet<Integer> allIds = new TreeSet<>();
-        for (LinkedList<Integer> list : invertedIndex.values()) {
-            allIds.addAll(list);
+        for (LinkedList<Posting> list : invertedIndex.values()) {
+            for (Posting p : list) {
+                allIds.add(p.getDocId());
+            }
         }
         return new LinkedList<>(allIds);
     }
