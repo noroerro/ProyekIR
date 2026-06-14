@@ -77,78 +77,106 @@ public class Search {
             System.out.println("HASIL POSTFIX: " + Arrays.toString(bqp.infixToPostfix(bqp.tokenize(query))));
             System.out
                     .println("HASIL QUERY: " + bqp.evaluatePostfix(bqp.infixToPostfix(bqp.tokenize(query))).toString());
-        
-        System.out.println("\n==============================");
-        System.out.println("HASIL RANKING BIM");
-        System.out.println("==============================");
-        
-        List<Map.Entry<Integer, Double>> hasilBIM = hitungBIM(query, invertedIndex, fileIndex);
-        
-        // jika tidak ada dokumen yang relevan
-        if (hasilBIM.isEmpty()) {
-            System.out.println("Tidak ada dokumen yang relevan dengan query.");
-        } else {
-            // Menampilkan 5 dokumen teratas
-            int peringkat = 1;
-            for (Map.Entry<Integer, Double> entry : hasilBIM) {
-                if (peringkat > 5) break; 
-                
-                int docId = entry.getKey();
-                double skor = entry.getValue();
-                String namaFile = fileIndex.get(docId);
-                
-                System.out.printf("%d. %s (Skor: %.4f)\n", peringkat, namaFile, skor);
-                peringkat++;
-            }
-        }
 
-        System.out.println("\n==============================");
-        System.out.println("HASIL RANKING Two Poisson Model");
-        System.out.println("==============================");
-        
-        List<Map.Entry<Integer, Double>> hasilTwoPoisson = hitungTwoPoisson(query, invertedIndex, fileIndex);
-        
-        // jika tidak ada dokumen yang relevan
-        if (hasilTwoPoisson.isEmpty()) {
-            System.out.println("Tidak ada dokumen yang relevan dengan query.");
-        } else {
-            // Menampilkan 5 dokumen teratas
-            int peringkat = 1;
-            for (Map.Entry<Integer, Double> entry : hasilTwoPoisson) {
-                if (peringkat > 5) break; 
-                
-                int docId = entry.getKey();
-                double skor = entry.getValue();
-                String namaFile = fileIndex.get(docId);
-                
-                System.out.printf("%d. %s (Skor: %.4f)\n", peringkat, namaFile, skor);
-                peringkat++;
-            }
-        }
+            System.out.println("\n==============================");
+            System.out.println("HASIL RANKING BIM");
+            System.out.println("==============================");
 
-        System.out.println("\n==============================");
-        System.out.println("HASIL RANKING BM25");
-        System.out.println("==============================");
-        
-        List<Map.Entry<Integer, Double>> hasilBM25 = hitungBM25(query, invertedIndex, fileIndex, docLength);
-        
-        // jika tidak ada dokumen yang relevan
-        if (hasilBM25.isEmpty()) {
-            System.out.println("Tidak ada dokumen yang relevan dengan query.");
-        } else {
-            // Menampilkan 5 dokumen teratas
-            int peringkat = 1;
-            for (Map.Entry<Integer, Double> entry : hasilBM25) {
-                if (peringkat > 5) break; 
-                
-                int docId = entry.getKey();
-                double skor = entry.getValue();
-                String namaFile = fileIndex.get(docId);
-                
-                System.out.printf("%d. %s (Skor: %.4f)\n", peringkat, namaFile, skor);
-                peringkat++;
+            List<Map.Entry<Integer, Double>> hasilBIM = hitungBIM(query, invertedIndex, fileIndex);
+
+            // jika tidak ada dokumen yang relevan
+            if (hasilBIM.isEmpty()) {
+                System.out.println("Tidak ada dokumen yang relevan dengan query.");
+            } else {
+                // Menampilkan 5 dokumen teratas
+                int peringkat = 1;
+                for (Map.Entry<Integer, Double> entry : hasilBIM) {
+                    if (peringkat > 10)
+                        break;
+
+                    int docId = entry.getKey();
+                    double skor = entry.getValue();
+                    String namaFile = fileIndex.get(docId);
+
+                    System.out.printf("%d. %s (Skor: %.4f)\n", peringkat, namaFile, skor);
+                    peringkat++;
+                }
             }
-        }
+
+            System.out.println("\n==============================");
+            System.out.println("HASIL RANKING Two Poisson Model");
+            System.out.println("==============================");
+
+            List<Map.Entry<Integer, Double>> hasilTwoPoisson = hitungTwoPoisson(query, invertedIndex, fileIndex);
+
+            // jika tidak ada dokumen yang relevan
+            if (hasilTwoPoisson.isEmpty()) {
+                System.out.println("Tidak ada dokumen yang relevan dengan query.");
+            } else {
+                // Menampilkan 5 dokumen teratas
+                int peringkat = 1;
+                for (Map.Entry<Integer, Double> entry : hasilTwoPoisson) {
+                    if (peringkat > 10)
+                        break;
+
+                    int docId = entry.getKey();
+                    double skor = entry.getValue();
+                    String namaFile = fileIndex.get(docId);
+
+                    System.out.printf("%d. %s (Skor: %.4f)\n", peringkat, namaFile, skor);
+                    peringkat++;
+                }
+            }
+
+            System.out.println("\n==============================");
+            System.out.println("HASIL RANKING BM25");
+            System.out.println("==============================");
+
+            List<Map.Entry<Integer, Double>> hasilBM25 = hitungBM25(query, invertedIndex, fileIndex, docLength);
+
+            // jika tidak ada dokumen yang relevan
+            if (hasilBM25.isEmpty()) {
+                System.out.println("Tidak ada dokumen yang relevan dengan query.");
+            } else {
+                // Menampilkan 5 dokumen teratas
+                int peringkat = 1;
+                for (Map.Entry<Integer, Double> entry : hasilBM25) {
+                    if (peringkat > 10)
+                        break;
+
+                    int docId = entry.getKey();
+                    double skor = entry.getValue();
+                    String namaFile = fileIndex.get(docId);
+
+                    System.out.printf("%d. %s (Skor: %.4f)\n", peringkat, namaFile, skor);
+                    peringkat++;
+                }
+            }
+
+            System.out.println("\n==============================");
+            System.out.println("HASIL RANKING BM11");
+            System.out.println("==============================");
+
+            List<Map.Entry<Integer, Double>> hasilBM11 = hitungBM11(query, invertedIndex, fileIndex, docLength);
+
+            // jika tidak ada dokumen yang relevan
+            if (hasilBM11.isEmpty()) {
+                System.out.println("Tidak ada dokumen yang relevan dengan query.");
+            } else {
+                // Menampilkan 5 dokumen teratas
+                int peringkat = 1;
+                for (Map.Entry<Integer, Double> entry : hasilBM11) {
+                    if (peringkat > 10)
+                        break;
+
+                    int docId = entry.getKey();
+                    double skor = entry.getValue();
+                    String namaFile = fileIndex.get(docId);
+
+                    System.out.printf("%d. %s (Skor: %.4f)\n", peringkat, namaFile, skor);
+                    peringkat++;
+                }
+            }
 
             // Query dimasukkan ke dalam array (setiap kata yang dipisah oleh spasi akan
             // dimasukkan ke array)
@@ -376,7 +404,8 @@ public class Search {
      * @param invertedIndex inverted index dari koleksi dokumen
      * @param fileIndex     pemetaan antara ID dokumen dengan nama filenya
      */
-    public static List<Map.Entry<Integer, Double>> hitungBIM(String query, HashMap<String, LinkedList<Posting>> invertedIndex,
+    public static List<Map.Entry<Integer, Double>> hitungBIM(String query,
+            HashMap<String, LinkedList<Posting>> invertedIndex,
             HashMap<Integer, String> fileIndex) {
         List<String> queryTerms = getQueryClean(query);
 
@@ -409,13 +438,15 @@ public class Search {
     }
 
     /**
-     * Menghitung skor kemiripan dokumen terhadap query menggunakan Two Poisson Model.
+     * Menghitung skor kemiripan dokumen terhadap query menggunakan Two Poisson
+     * Model.
      *
      * @param query         string query yang dicari
      * @param invertedIndex inverted index dari koleksi dokumen
      * @param fileIndex     pemetaan antara ID dokumen dengan nama filenya
      */
-    public static List<Map.Entry<Integer, Double>> hitungTwoPoisson(String query, HashMap<String, LinkedList<Posting>> invertedIndex,
+    public static List<Map.Entry<Integer, Double>> hitungTwoPoisson(String query,
+            HashMap<String, LinkedList<Posting>> invertedIndex,
             HashMap<Integer, String> fileIndex) {
         List<String> queryTerms = getQueryClean(query);
 
@@ -435,8 +466,8 @@ public class Search {
 
             LinkedList<Posting> postings = invertedIndex.get(term);
             int df = postings.size();
-            
-            double k = 1.5; //ini parameter k nya, bisa di tuning
+
+            double k = 1.5; // ini parameter k nya, bisa di tuning
 
             double weight = Math.log((N - df + 0.5) / (df + 0.5));
 
@@ -450,7 +481,7 @@ public class Search {
         return urutkanDokumen(docScores);
     }
 
-        /**
+    /**
      * Menghitung skor kemiripan dokumen terhadap query menggunakan BM25.
      *
      * @param query         string query yang dicari
@@ -458,7 +489,8 @@ public class Search {
      * @param fileIndex     pemetaan antara ID dokumen dengan nama filenya
      * @param doclength     menyimpan panjang setiap dokumen untuk perhitungan BM25
      */
-    public static List<Map.Entry<Integer, Double>> hitungBM25(String query, HashMap<String, LinkedList<Posting>> invertedIndex,
+    public static List<Map.Entry<Integer, Double>> hitungBM25(String query,
+            HashMap<String, LinkedList<Posting>> invertedIndex,
             HashMap<Integer, String> fileIndex, HashMap<Integer, Integer> docLength) {
         List<String> queryTerms = getQueryClean(query);
 
@@ -469,9 +501,8 @@ public class Search {
 
         int N = fileIndex.size();
         double lavg = avgDocLength; // Rata-rata panjang dokumen (Average Document Length)
-        double k1 = 1.5; //ini parameter k nya, bisa di tuning
-        double b = 0.75; //ini parameter b nya, bisa di tuning
-
+        double k1 = 1.5; // ini parameter k nya, bisa di tuning
+        double b = 0.75; // ini parameter b nya, bisa di tuning
 
         HashMap<Integer, Double> docScores = new HashMap<>();
 
@@ -483,7 +514,6 @@ public class Search {
 
             LinkedList<Posting> postings = invertedIndex.get(term);
             int df = postings.size();
-            
 
             double weight = Math.log((N - df + 0.5) / (df + 0.5));
 
@@ -491,7 +521,53 @@ public class Search {
                 int docId = posting.getDocId();
                 int tf = posting.getTermFrequency();
                 int ld = docLength.get(docId);
-                double weightBM25 = (tf * (k1 + 1) * weight) / (tf + (k1 * ld / lavg) * b + k1 * (1-b));
+                double weightBM25 = (tf * (k1 + 1) * weight) / (tf + (k1 * ld / lavg) * b + k1 * (1 - b));
+                docScores.put(docId, docScores.getOrDefault(docId, 0.0) + weightBM25);
+            }
+        }
+        return urutkanDokumen(docScores);
+    }
+
+    /**
+     * Menghitung skor kemiripan dokumen terhadap query menggunakan BM25.
+     *
+     * @param query         string query yang dicari
+     * @param invertedIndex inverted index dari koleksi dokumen
+     * @param fileIndex     pemetaan antara ID dokumen dengan nama filenya
+     * @param doclength     menyimpan panjang setiap dokumen untuk perhitungan BM11
+     */
+    public static List<Map.Entry<Integer, Double>> hitungBM11(String query,
+            HashMap<String, LinkedList<Posting>> invertedIndex,
+            HashMap<Integer, String> fileIndex, HashMap<Integer, Integer> docLength) {
+        List<String> queryTerms = getQueryClean(query);
+
+        if (queryTerms.isEmpty()) {
+            System.out.println("Query tidak valid atau hanya berisi stopword.");
+            return new ArrayList<>();
+        }
+
+        int N = fileIndex.size();
+        double lavg = avgDocLength; // Rata-rata panjang dokumen (Average Document Length)
+        double k1 = 1.5; // ini parameter k nya, bisa di tuning
+
+        HashMap<Integer, Double> docScores = new HashMap<>();
+
+        for (String term : queryTerms) {
+
+            if (!invertedIndex.containsKey(term)) {
+                continue;
+            }
+
+            LinkedList<Posting> postings = invertedIndex.get(term);
+            int df = postings.size();
+
+            double weight = Math.log((N - df + 0.5) / (df + 0.5));
+
+            for (Posting posting : postings) {
+                int docId = posting.getDocId();
+                int tf = posting.getTermFrequency();
+                int ld = docLength.get(docId);
+                double weightBM25 = (tf * (k1 + 1) * weight) / (tf + (k1 * ld / lavg));
                 docScores.put(docId, docScores.getOrDefault(docId, 0.0) + weightBM25);
             }
         }
@@ -500,7 +576,7 @@ public class Search {
 
     public static List<Map.Entry<Integer, Double>> urutkanDokumen(HashMap<Integer, Double> scores) {
         List<Map.Entry<Integer, Double>> listDokumen = new ArrayList<>(scores.entrySet());
-        //ngurutin score dokumen dari yang terbesar ke yang terkecil
+        // ngurutin score dokumen dari yang terbesar ke yang terkecil
         listDokumen.sort((o1, o2) -> o2.getValue().compareTo(o1.getValue()));
         return listDokumen;
     }
