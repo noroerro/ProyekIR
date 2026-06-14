@@ -4,10 +4,12 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.Scanner;
 import java.util.Set;
 
@@ -71,6 +73,10 @@ public class Search {
                 break;
             }
 
+            // === BIM Ranking ===
+            hitungBIM(query, invertedIndex, fileIndex);
+
+            // Boolean Query Parser
             BooleanQueryParser bqp = new BooleanQueryParser(invertedIndex);
             System.out.println("TOKENIZE:" + Arrays.toString(bqp.tokenize(query)));
             System.out.println("HASIL POSTFIX: " + Arrays.toString(bqp.infixToPostfix(bqp.tokenize(query))));
@@ -297,7 +303,19 @@ public class Search {
 
     /**
      * Menghitung skor kemiripan dokumen terhadap query menggunakan Binary
-     * Independence Model (BIM).
+     * Independence Model (BIM) klasik dengan estimasi probabilitas pt dan ut,
+     * serta refinement iteratif menggunakan top-k pseudo-relevance feedback.
+     *
+     * RSV(d) = sum_{t in query ∩ d} log( pt * (1 - ut) / (ut * (1 - pt)) )
+     *
+     * Estimasi awal (tanpa relevance feedback):
+     *   pt = 0.5          (asumsi term muncul di 50% dokumen relevan)
+     *   ut = df / N       (proporsi dokumen yang mengandung term)
+     *
+     * Refinement iteratif:
+     *   Ambil top-k dokumen hasil ranking sebagai pseudo-relevant set R.
+     *   pt = n_t / |R|           di mana n_t = jumlah dokumen di R yang mengandung term t
+     *   ut = (n - n_t) / (N - |R|)  di mana n = df (jumlah total dokumen yang mengandung term t)
      *
      * @param query         string query yang dicari
      * @param invertedIndex inverted index dari koleksi dokumen
@@ -312,27 +330,158 @@ public class Search {
             return;
         }
 
-        int N = fileIndex.size();
-        HashMap<Integer, Double> docScores = new HashMap<>();
+        int N = fileIndex.size(); // Total jumlah dokumen
+        int maxIterations = 3;    // Jumlah iterasi refinement
+        int topK = 10;            // Jumlah dokumen pseudo-relevant
+
+        // Simpan df (document frequency) untuk setiap query term yang ada di index
+        List<String> validTerms = new ArrayList<>();
+        HashMap<String, Integer> dfMap = new HashMap<>();
 
         for (String term : queryTerms) {
+            if (invertedIndex.containsKey(term)) {
+                validTerms.add(term);
+                dfMap.put(term, invertedIndex.get(term).size());
+            }
+        }
 
-            if (!invertedIndex.containsKey(term)) {
-                continue;
+        if (validTerms.isEmpty()) {
+            System.out.println("Tidak ada term query yang ditemukan di indeks.");
+            return;
+        }
+
+        // === Inisialisasi pt dan ut (tanpa relevance feedback) ===
+        HashMap<String, Double> pt = new HashMap<>();
+        HashMap<String, Double> ut = new HashMap<>();
+
+        for (String term : validTerms) {
+            double df = dfMap.get(term);
+            pt.put(term, 0.5);                  // Estimasi awal pt
+            ut.put(term, df / N);               // Estimasi awal ut = df / N
+        }
+
+        // === Hitung RSV awal ===
+        HashMap<Integer, Double> docScores = computeRSV(validTerms, invertedIndex, pt, ut);
+
+        // === Iterative refinement menggunakan pseudo-relevance feedback ===
+        for (int iter = 0; iter < maxIterations; iter++) {
+            // Ambil top-k dokumen dengan skor tertinggi sebagai pseudo-relevant set R
+            List<Integer> topKDocs = getTopKDocs(docScores, topK);
+            int R = topKDocs.size(); // |R| = jumlah dokumen pseudo-relevant
+
+            if (R == 0) break;
+
+            Set<Integer> relevantSet = new HashSet<>(topKDocs);
+
+            // Hitung ulang pt dan ut berdasarkan pseudo-relevant set
+            HashMap<String, Double> newPt = new HashMap<>();
+            HashMap<String, Double> newUt = new HashMap<>();
+
+            for (String term : validTerms) {
+                int df = dfMap.get(term);
+
+                // n_t = jumlah dokumen di R yang mengandung term t
+                int nt = 0;
+                LinkedList<Posting> postings = invertedIndex.get(term);
+                for (Posting posting : postings) {
+                    if (relevantSet.contains(posting.getDocId())) {
+                        nt++;
+                    }
+                }
+
+                // pt = n_t / |R|  (dengan smoothing agar tidak 0 atau 1)
+                double ptVal = (nt + 0.5) / (R + 1.0);
+                // ut = (n - n_t) / (N - |R|)  (dengan smoothing)
+                double utVal = (df - nt + 0.5) / (N - R + 1.0);
+
+                newPt.put(term, ptVal);
+                newUt.put(term, utVal);
             }
 
+            pt = newPt;
+            ut = newUt;
+
+            // Hitung ulang RSV dengan pt dan ut yang baru
+            docScores = computeRSV(validTerms, invertedIndex, pt, ut);
+        }
+
+        // === Cetak hasil ranking ===
+        System.out.println("\n========== BIM Ranking ==========");
+        System.out.println("Query: \"" + query + "\"");
+        System.out.println("Query terms (stemmed): " + validTerms);
+
+        // Cetak pt dan ut untuk setiap term
+        for (String term : validTerms) {
+            System.out.printf("  Term '%-15s' | df=%-4d | pt=%.4f | ut=%.4f%n",
+                    term, dfMap.get(term), pt.get(term), ut.get(term));
+        }
+
+        // Urutkan dokumen berdasarkan RSV menurun
+        List<Map.Entry<Integer, Double>> sorted = new ArrayList<>(docScores.entrySet());
+        sorted.sort((a, b) -> Double.compare(b.getValue(), a.getValue()));
+
+        System.out.println("\nHasil Ranking (RSV):");
+        int rank = 1;
+        for (Map.Entry<Integer, Double> entry : sorted) {
+            int docId = entry.getKey();
+            double rsv = entry.getValue();
+            System.out.printf("  #%d  Dokumen %-10s (ID: %d)  RSV = %.6f%n",
+                    rank++, fileIndex.get(docId), docId, rsv);
+        }
+        System.out.println("=================================");
+    }
+
+    /**
+     * Menghitung RSV (Retrieval Status Value) untuk setiap dokumen.
+     * RSV(d) = sum_{t in query ∩ d} log( pt * (1 - ut) / (ut * (1 - pt)) )
+     *
+     * @param validTerms    daftar term query yang valid (ada di indeks)
+     * @param invertedIndex inverted index
+     * @param pt            peta probabilitas pt untuk setiap term
+     * @param ut            peta probabilitas ut untuk setiap term
+     * @return peta skor RSV untuk setiap dokumen
+     */
+    private static HashMap<Integer, Double> computeRSV(List<String> validTerms,
+            HashMap<String, LinkedList<Posting>> invertedIndex,
+            HashMap<String, Double> pt, HashMap<String, Double> ut) {
+        HashMap<Integer, Double> docScores = new HashMap<>();
+
+        for (String term : validTerms) {
+            double p = pt.get(term);
+            double u = ut.get(term);
+
+            // Hindari pembagian dengan nol atau log(0)
+            if (p <= 0 || p >= 1 || u <= 0 || u >= 1) continue;
+
+            // Bobot BIM klasik: log( pt * (1 - ut) / (ut * (1 - pt)) )
+            double weight = Math.log((p * (1 - u)) / (u * (1 - p)));
+
             LinkedList<Posting> postings = invertedIndex.get(term);
-            int df = postings.size();
-
-            double weight = Math.log((N - df + 0.5) / (df + 0.5));
-            // double weight = Math.log((N - df)/df);
-
             for (Posting posting : postings) {
                 int docId = posting.getDocId();
                 docScores.put(docId, docScores.getOrDefault(docId, 0.0) + weight);
             }
         }
 
+        return docScores;
+    }
+
+    /**
+     * Mengambil top-k dokumen dengan skor RSV tertinggi.
+     *
+     * @param docScores peta skor dokumen
+     * @param k         jumlah dokumen teratas
+     * @return daftar docID dari top-k dokumen
+     */
+    private static List<Integer> getTopKDocs(HashMap<Integer, Double> docScores, int k) {
+        List<Map.Entry<Integer, Double>> sorted = new ArrayList<>(docScores.entrySet());
+        sorted.sort((a, b) -> Double.compare(b.getValue(), a.getValue()));
+
+        List<Integer> topK = new ArrayList<>();
+        for (int i = 0; i < Math.min(k, sorted.size()); i++) {
+            topK.add(sorted.get(i).getKey());
+        }
+        return topK;
     }
 
 }
