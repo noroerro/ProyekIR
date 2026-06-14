@@ -468,7 +468,7 @@ public class Search {
         }
 
         int N = fileIndex.size();
-        double lavg = avgDocLength(invertedIndex, fileIndex);
+        double lavg = avgDocLength; // Rata-rata panjang dokumen (Average Document Length)
         double k1 = 1.5; //ini parameter k nya, bisa di tuning
         double b = 0.75; //ini parameter b nya, bisa di tuning
 
@@ -496,21 +496,6 @@ public class Search {
             }
         }
         return urutkanDokumen(docScores);
-    }
-
-    public static double avgDocLength(HashMap<String, LinkedList<Posting>> invertedIndex,
-            HashMap<Integer, String> fileIndex){
-        int N = fileIndex.size();
-        int totalLength = 0;
-
-        for (String term : invertedIndex.keySet()) {
-            LinkedList<Posting> postings = invertedIndex.get(term);
-            for (Posting posting : postings) {
-                totalLength += posting.getTermFrequency();
-            }
-        }
-
-        return (double) totalLength / N;
     }
 
     public static List<Map.Entry<Integer, Double>> urutkanDokumen(HashMap<Integer, Double> scores) {
