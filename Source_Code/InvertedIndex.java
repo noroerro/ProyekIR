@@ -1,0 +1,85 @@
+package Source_Code;
+
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.Scanner;
+
+/**
+ * Kelas untuk membangun struktur data Inverted Index dari koleksi dokumen.
+ * Menyimpan term frequency, document frequency, dan panjang dokumen.
+ */
+public class InvertedIndex {
+
+    /**
+     * Mendapatkan daftar file di dalam direktori dokumen.
+     *
+     * @param path path direktori dokumen
+     * @return array dari file-file dokumen
+     */
+    public static File[] getAllFiles(String path) {
+        File folder = new File(path);
+        return folder.listFiles();
+    }
+
+    /**
+     * Membuat Inverted Index beserta perhitungan Term Frequency (TF) dan Document
+     * Length.
+     *
+     * @param files     array dari file-file dokumen yang akan diindeks
+     * @param fileIndex peta (map) untuk menyimpan pemetaan ID dokumen ke nama file
+     * @param docLength peta (map) untuk menyimpan panjang setiap dokumen
+     * @return inverted index yang memetakan setiap term ke daftar posting-nya
+     * @throws FileNotFoundException jika file dokumen tidak ditemukan
+     */
+    public static HashMap<String, LinkedList<Posting>> createInvertedIndex(File[] files,
+            HashMap<Integer, String> fileIndex, HashMap<Integer, Integer> docLength) throws FileNotFoundException {
+        HashMap<String, LinkedList<Posting>> invertedIndex = new HashMap<>();
+        Scanner sc;
+        int counter = 0;
+
+        for (File file : files) {
+            if (file.isFile() && file.getName().endsWith(".txt")) {
+                sc = new Scanner(file);
+                counter++;
+                fileIndex.put(counter, file.getName());
+                docLength.put(counter, 0);
+
+                while (sc.hasNext()) {
+                    String kata = TextPreprocessor.preProcessing(sc.next());
+
+                    if (TextPreprocessor.stopwords.contains(kata)) {
+                        continue;
+                    }
+
+                    kata = Stemmer.doPorterStemmer(kata);
+                    if (kata.isEmpty()) {
+                        continue;
+                    }
+
+                    // Increment panjang dokumen (hanya kata valid setelah stopword & stemming)
+                    docLength.put(counter, docLength.get(counter) + 1);
+
+                    if (!invertedIndex.containsKey(kata)) {
+                        LinkedList<Posting> posting = new LinkedList<>();
+                        posting.add(new Posting(counter, 1));
+                        invertedIndex.put(kata, posting);
+                    } else {
+                        LinkedList<Posting> posting = invertedIndex.get(kata);
+                        Posting lastPo = posting.getLast();
+
+                        if (lastPo.getDocId() == counter) {
+                            lastPo.incrementTermFrequency(); // Increment TF jika kata muncul lagi di dokumen yang sama
+                        } else {
+                            posting.add(new Posting(counter, 1)); // Buat posting baru jika di dokumen baru
+                        }
+                    }
+                }
+                sc.close();
+            }
+        }
+
+        return invertedIndex;
+    }
+}
