@@ -1,6 +1,7 @@
 package Source_Code;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -12,8 +13,8 @@ public class Search {
     // Rata-rata panjang dokumen (Average Document Length)
     public static double avgDocLength = 0.0;
 
-    public static void main(String[] args) {
-        String path = "./Dokumen"; // Ganti dengan path folder dokumen yang sesuai
+    public static void main(String[] args) throws FileNotFoundException {
+        String path = "./Dokumen/cranfield"; // Path folder dokumen cranfield
         // I : Data Indexing
         // 1. Mendapatkan semua file yang ada di folder dokumen
         File[] files = InvertedIndex.getAllFiles(path);
@@ -49,16 +50,46 @@ public class Search {
         } catch (Exception e) {
             System.out.println("Error : " + e.getMessage());
         }
+        // Membaca semua query test dari file query.txt
+        Map<Integer, String> queries = FileReader.bacaSemuaQuery();
 
         // Scanner untuk query yang ingin dicari
         Scanner sc = new Scanner(System.in);
         while (true) {
-            System.out.print("\nMasukkan kata yang ingin dicari: ");
-            String query = sc.nextLine();
+            System.out.println("\n==============================");
+            System.out.println("MENU QUERY");
+            System.out.println("==============================");
+            System.out.println("1. Gunakan Query Evaluasi (Cranfield)");
+            System.out.println("2. Masukkan Query Sendiri");
+            System.out.println("-1. Keluar");
+            System.out.print("\nPilih opsi: ");
+            String pilihan = sc.nextLine();
 
-            if (query.equals("-1")) {
+            if (pilihan.equals("-1")) {
                 System.out.println("Program berhasil diberhentikan");
                 break;
+            }
+
+            String query;
+            if (pilihan.equals("1")) {
+                System.out.print("Pilih (1 - 225) untuk query evaluasi: ");
+                int queryId = Integer.parseInt(sc.nextLine().trim());
+                if (queryId>255 || queryId<1) {
+                    System.out.println("Masukkan query yg valid!");
+                    continue;
+                }
+                query = queries.get(queryId);
+                System.out.println("Query yang dipilih: " + query);
+            } else if (pilihan.equals("2")) {
+                System.out.print("Masukkan query: ");
+                query = sc.nextLine();
+                if (query.trim().isEmpty()) {
+                    System.out.println("Query tidak boleh kosong.");
+                    continue;
+                }
+            } else {
+                System.out.println("Opsi tidak valid.");
+                continue;
             }
 
 
