@@ -234,7 +234,7 @@ public class Search {
     public static List<Map.Entry<Integer, Double>> hitungBM11(String query,
             HashMap<String, LinkedList<Posting>> invertedIndex,
             HashMap<Integer, String> fileIndex, HashMap<Integer, Integer> docLength) {
-        List<String> queryTerms = getQueryClean(query);
+        List<String> queryTerms = TextPreprocessor.getQueryClean(query);
 
         if (queryTerms.isEmpty()) {
             System.out.println("Query tidak valid atau hanya berisi stopword.");
