@@ -12,6 +12,7 @@ import java.util.Scanner;
 public class Search {
     // Rata-rata panjang dokumen (Average Document Length)
     public static double avgDocLength = 0.0;
+    public static HashMap<Integer, Integer> docLength = null;
 
     public static void main(String[] args) throws FileNotFoundException {
         String path = "./Dokumen/cranfield"; // Path folder dokumen cranfield
@@ -21,7 +22,6 @@ public class Search {
         // 2. Membuat inverted index dari semua file yang ada di folder dokumen
         HashMap<Integer, String> fileIndex = null;
         HashMap<String, LinkedList<Posting>> invertedIndex = null;
-        HashMap<Integer, Integer> docLength = null;
         try {
             // fileIndex u/ menyimpan nama file sebagai nomor
             fileIndex = new HashMap<>();
@@ -121,7 +121,7 @@ public class Search {
             System.out.println("HASIL RANKING Two Poisson Model");
             System.out.println("==============================");
 
-            List<Map.Entry<Integer, Double>> hasilTwoPoisson = hitungTwoPoisson(query, invertedIndex, fileIndex);
+            List<Map.Entry<Integer, Double>> hasilTwoPoisson = TwoPoissonModel.hitungTwoPoisson(query, invertedIndex, fileIndex);
 
             if (hasilTwoPoisson.isEmpty()) {
                 System.out.println("Tidak ada dokumen yang relevan dengan query.");
@@ -143,7 +143,7 @@ public class Search {
             System.out.println("HASIL RANKING BM25");
             System.out.println("==============================");
 
-            List<Map.Entry<Integer, Double>> hasilBM25 = hitungBM25(query, invertedIndex, fileIndex, docLength);
+            List<Map.Entry<Integer, Double>> hasilBM25 = BM25Model.hitungBM25(query, invertedIndex, fileIndex);
 
             if (hasilBM25.isEmpty()) {
                 System.out.println("Tidak ada dokumen yang relevan dengan query.");
@@ -160,98 +160,30 @@ public class Search {
                     peringkat++;
                 }
             }
+
+            System.out.println("\n==============================");
+            System.out.println("HASIL RANKING BM11");
+            System.out.println("==============================");
+
+            List<Map.Entry<Integer, Double>> hasilBM11 = BM11Model.hitungBM11(query, invertedIndex, fileIndex);
+
+            if (hasilBM11.isEmpty()) {
+                System.out.println("Tidak ada dokumen yang relevan dengan query.");
+            } else {
+                int peringkat = 1;
+                for (Map.Entry<Integer, Double> entry : hasilBM11) {
+                    if (peringkat > 5) break;
+
+                    int docId = entry.getKey();
+                    double skor = entry.getValue();
+                    String namaFile = fileIndex.get(docId);
+
+                    System.out.printf("%d. %s (Skor: %.4f)\n", peringkat, namaFile, skor);
+                    peringkat++;
+                }
+            }
         }
         sc.close();
-    }
-
-    /**
-     * Menghitung skor kemiripan dokumen terhadap query menggunakan Two Poisson Model.
-     *
-     * @param query         string query yang dicari
-     * @param invertedIndex inverted index dari koleksi dokumen
-     * @param fileIndex     pemetaan antara ID dokumen dengan nama filenya
-     */
-    public static List<Map.Entry<Integer, Double>> hitungTwoPoisson(String query,
-            HashMap<String, LinkedList<Posting>> invertedIndex,
-            HashMap<Integer, String> fileIndex) {
-        List<String> queryTerms = TextPreprocessor.getQueryClean(query);
-
-        if (queryTerms.isEmpty()) {
-            System.out.println("Query tidak valid atau hanya berisi stopword.");
-            return new ArrayList<>();
-        }
-
-        int N = fileIndex.size();
-        HashMap<Integer, Double> docScores = new HashMap<>();
-
-        for (String term : queryTerms) {
-
-            if (!invertedIndex.containsKey(term)) {
-                continue;
-            }
-
-            LinkedList<Posting> postings = invertedIndex.get(term);
-            int df = postings.size();
-
-            double k = 1.5; // ini parameter k nya, bisa di tuning
-
-            double weight = Math.log((N - df + 0.5) / (df + 0.5));
-
-            for (Posting posting : postings) {
-                int docId = posting.getDocId();
-                int tf = posting.getTermFrequency();
-                double weightTwoPoisson = (tf * (k + 1) * weight) / (tf + k);
-                docScores.put(docId, docScores.getOrDefault(docId, 0.0) + weightTwoPoisson);
-            }
-        }
-        return urutkanDokumen(docScores);
-    }
-
-    /**
-     * Menghitung skor kemiripan dokumen terhadap query menggunakan BM25.
-     *
-     * @param query         string query yang dicari
-     * @param invertedIndex inverted index dari koleksi dokumen
-     * @param fileIndex     pemetaan antara ID dokumen dengan nama filenya
-     * @param doclength     menyimpan panjang setiap dokumen untuk perhitungan BM25
-     */
-    public static List<Map.Entry<Integer, Double>> hitungBM25(String query,
-            HashMap<String, LinkedList<Posting>> invertedIndex,
-            HashMap<Integer, String> fileIndex, HashMap<Integer, Integer> docLength) {
-        List<String> queryTerms = TextPreprocessor.getQueryClean(query);
-
-        if (queryTerms.isEmpty()) {
-            System.out.println("Query tidak valid atau hanya berisi stopword.");
-            return new ArrayList<>();
-        }
-
-        int N = fileIndex.size();
-        double lavg = avgDocLength; // Rata-rata panjang dokumen (Average Document Length)
-        double k1 = 1.5; // ini parameter k nya, bisa di tuning
-        double b = 0.75; // ini parameter b nya, bisa di tuning
-
-        HashMap<Integer, Double> docScores = new HashMap<>();
-
-        for (String term : queryTerms) {
-
-            if (!invertedIndex.containsKey(term)) {
-                continue;
-            }
-
-            LinkedList<Posting> postings = invertedIndex.get(term);
-            int df = postings.size();
-
-            double weight = Math.log((N - df + 0.5) / (df + 0.5));
-
-            for (Posting posting : postings) {
-                int docId = posting.getDocId();
-                int tf = posting.getTermFrequency();
-                int ld = docLength.get(docId);
-                double weightBM25 = (tf * (k1 + 1) * weight) / (tf + (k1 * ld / lavg) * b + k1 * (1 - b));
-                docScores.put(docId, docScores.getOrDefault(docId, 0.0) + weightBM25);
-            }
-        }
-        return urutkanDokumen(docScores);
     }
 
     /**
