@@ -186,52 +186,6 @@ public class Search {
         sc.close();
     }
 
-    /**
-     * Menghitung skor kemiripan dokumen terhadap query menggunakan BM25.
-     *
-     * @param query         string query yang dicari
-     * @param invertedIndex inverted index dari koleksi dokumen
-     * @param fileIndex     pemetaan antara ID dokumen dengan nama filenya
-     * @param doclength     menyimpan panjang setiap dokumen untuk perhitungan BM11
-     */
-    public static List<Map.Entry<Integer, Double>> hitungBM11(String query,
-            HashMap<String, LinkedList<Posting>> invertedIndex,
-            HashMap<Integer, String> fileIndex, HashMap<Integer, Integer> docLength) {
-        List<String> queryTerms = TextPreprocessor.getQueryClean(query);
-
-        if (queryTerms.isEmpty()) {
-            System.out.println("Query tidak valid atau hanya berisi stopword.");
-            return new ArrayList<>();
-        }
-
-        int N = fileIndex.size();
-        double lavg = avgDocLength; // Rata-rata panjang dokumen (Average Document Length)
-        double k1 = 1.5; // ini parameter k nya, bisa di tuning
-
-        HashMap<Integer, Double> docScores = new HashMap<>();
-
-        for (String term : queryTerms) {
-
-            if (!invertedIndex.containsKey(term)) {
-                continue;
-            }
-
-            LinkedList<Posting> postings = invertedIndex.get(term);
-            int df = postings.size();
-
-            double weight = Math.log((N - df + 0.5) / (df + 0.5));
-
-            for (Posting posting : postings) {
-                int docId = posting.getDocId();
-                int tf = posting.getTermFrequency();
-                int ld = docLength.get(docId);
-                double weightBM25 = (tf * (k1 + 1) * weight) / (tf + (k1 * ld / lavg));
-                docScores.put(docId, docScores.getOrDefault(docId, 0.0) + weightBM25);
-            }
-        }
-        return urutkanDokumen(docScores);
-    }
-
     public static List<Map.Entry<Integer, Double>> urutkanDokumen(HashMap<Integer, Double> scores) {
         List<Map.Entry<Integer, Double>> listDokumen = new ArrayList<>(scores.entrySet());
         // ngurutin score dokumen dari yang terbesar ke yang terkecil
