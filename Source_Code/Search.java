@@ -121,7 +121,7 @@ public class Search {
             System.out.println("HASIL RANKING Two Poisson Model");
             System.out.println("==============================");
 
-            List<Map.Entry<Integer, Double>> hasilTwoPoisson = hitungTwoPoisson(query, invertedIndex, fileIndex);
+            List<Map.Entry<Integer, Double>> hasilTwoPoisson = TwoPoissonModel.hitungTwoPoisson(query, invertedIndex, fileIndex);
 
             if (hasilTwoPoisson.isEmpty()) {
                 System.out.println("Tidak ada dokumen yang relevan dengan query.");
@@ -162,49 +162,6 @@ public class Search {
             }
         }
         sc.close();
-    }
-
-    /**
-     * Menghitung skor kemiripan dokumen terhadap query menggunakan Two Poisson Model.
-     *
-     * @param query         string query yang dicari
-     * @param invertedIndex inverted index dari koleksi dokumen
-     * @param fileIndex     pemetaan antara ID dokumen dengan nama filenya
-     */
-    public static List<Map.Entry<Integer, Double>> hitungTwoPoisson(String query,
-            HashMap<String, LinkedList<Posting>> invertedIndex,
-            HashMap<Integer, String> fileIndex) {
-        List<String> queryTerms = TextPreprocessor.getQueryClean(query);
-
-        if (queryTerms.isEmpty()) {
-            System.out.println("Query tidak valid atau hanya berisi stopword.");
-            return new ArrayList<>();
-        }
-
-        int N = fileIndex.size();
-        HashMap<Integer, Double> docScores = new HashMap<>();
-
-        for (String term : queryTerms) {
-
-            if (!invertedIndex.containsKey(term)) {
-                continue;
-            }
-
-            LinkedList<Posting> postings = invertedIndex.get(term);
-            int df = postings.size();
-
-            double k = 1.5; // ini parameter k nya, bisa di tuning
-
-            double weight = Math.log((N - df + 0.5) / (df + 0.5));
-
-            for (Posting posting : postings) {
-                int docId = posting.getDocId();
-                int tf = posting.getTermFrequency();
-                double weightTwoPoisson = (tf * (k + 1) * weight) / (tf + k);
-                docScores.put(docId, docScores.getOrDefault(docId, 0.0) + weightTwoPoisson);
-            }
-        }
-        return urutkanDokumen(docScores);
     }
 
     /**
