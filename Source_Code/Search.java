@@ -12,7 +12,7 @@ import java.util.Scanner;
 public class Search {
     // Rata-rata panjang dokumen (Average Document Length)
     public static double avgDocLength = 0.0;
-    public static  HashMap<Integer, Integer> docLength = null;
+    public static HashMap<Integer, Integer> docLength = null;
 
     public static void main(String[] args) throws FileNotFoundException {
         String path = "./Dokumen/cranfield"; // Path folder dokumen cranfield
