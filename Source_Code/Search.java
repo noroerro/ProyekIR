@@ -22,7 +22,6 @@ public class Search {
         // 2. Membuat inverted index dari semua file yang ada di folder dokumen
         HashMap<Integer, String> fileIndex = null;
         HashMap<String, LinkedList<Posting>> invertedIndex = null;
-        docLength = new HashMap<>();
         try {
             // fileIndex u/ menyimpan nama file sebagai nomor
             fileIndex = new HashMap<>();
@@ -151,6 +150,28 @@ public class Search {
             } else {
                 int peringkat = 1;
                 for (Map.Entry<Integer, Double> entry : hasilBM25) {
+                    if (peringkat > 5) break;
+
+                    int docId = entry.getKey();
+                    double skor = entry.getValue();
+                    String namaFile = fileIndex.get(docId);
+
+                    System.out.printf("%d. %s (Skor: %.4f)\n", peringkat, namaFile, skor);
+                    peringkat++;
+                }
+            }
+
+            System.out.println("\n==============================");
+            System.out.println("HASIL RANKING BM11");
+            System.out.println("==============================");
+
+            List<Map.Entry<Integer, Double>> hasilBM11 = BM11Model.hitungBM11(query, invertedIndex, fileIndex);
+
+            if (hasilBM11.isEmpty()) {
+                System.out.println("Tidak ada dokumen yang relevan dengan query.");
+            } else {
+                int peringkat = 1;
+                for (Map.Entry<Integer, Double> entry : hasilBM11) {
                     if (peringkat > 5) break;
 
                     int docId = entry.getKey();
