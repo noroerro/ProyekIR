@@ -37,14 +37,13 @@ public class InvertedIndex {
             HashMap<Integer, String> fileIndex, HashMap<Integer, Integer> docLength) throws FileNotFoundException {
         HashMap<String, LinkedList<Posting>> invertedIndex = new HashMap<>();
         Scanner sc;
-        int counter = 0;
 
         for (File file : files) {
             if (file.isFile() && file.getName().endsWith(".txt")) {
                 sc = new Scanner(file);
-                counter++;
-                fileIndex.put(counter, file.getName());
-                docLength.put(counter, 0);
+                int docId = Integer.parseInt(file.getName().replace(".txt", ""));
+                fileIndex.put(docId, file.getName());
+                docLength.put(docId, 0);
 
                 while (sc.hasNext()) {
                     String kata = TextPreprocessor.preProcessing(sc.next());
@@ -59,20 +58,20 @@ public class InvertedIndex {
                     }
 
                     // Increment panjang dokumen (hanya kata valid setelah stopword & stemming)
-                    docLength.put(counter, docLength.get(counter) + 1);
+                    docLength.put(docId, docLength.get(docId) + 1);
 
                     if (!invertedIndex.containsKey(kata)) {
                         LinkedList<Posting> posting = new LinkedList<>();
-                        posting.add(new Posting(counter, 1));
+                        posting.add(new Posting(docId, 1));
                         invertedIndex.put(kata, posting);
                     } else {
                         LinkedList<Posting> posting = invertedIndex.get(kata);
                         Posting lastPo = posting.getLast();
 
-                        if (lastPo.getDocId() == counter) {
+                        if (lastPo.getDocId() == docId) {
                             lastPo.incrementTermFrequency(); // Increment TF jika kata muncul lagi di dokumen yang sama
                         } else {
-                            posting.add(new Posting(counter, 1)); // Buat posting baru jika di dokumen baru
+                            posting.add(new Posting(docId, 1)); // Buat posting baru jika di dokumen baru
                         }
                     }
                 }
