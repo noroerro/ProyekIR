@@ -10,8 +10,10 @@ import java.util.Set;
 public class BM25Model {
     
     public static List<Map.Entry<Integer, Double>> hitungBM25(String query,
-            HashMap<String, LinkedList<Posting>> invertedIndex, HashMap<Integer, String> fileIndex) {
-        
+            HashMap<String, LinkedList<Posting>> invertedIndex,
+            HashMap<Integer, String> fileIndex,
+            Set<Integer> relevantSet) {
+
         List<String> queryTerms = TextPreprocessor.getQueryClean(query);
         int N = fileIndex.size();
 
@@ -33,16 +35,16 @@ public class BM25Model {
 
 
         // Hitung skor menggunakan BM25 model
-        HashMap<Integer, Double> docScores = hitungSkor(validTerms, invertedIndex, N, k1, b, lavg);
+        HashMap<Integer, Double> docScores = hitungSkor(validTerms, invertedIndex, N, k1, b, lavg, relevantSet);
 
         // Urutkan dan return
         return Search.urutkanDokumen(docScores);
     }
 
     public static HashMap<Integer, Double> hitungSkor(List<String> validTerms,
-            HashMap<String, LinkedList<Posting>> invertedIndex, int N, double k1, double b, double lavg) {
+            HashMap<String, LinkedList<Posting>> invertedIndex, int N, double k1, double b, double lavg,
+            Set<Integer> relevantSet) {
 
-        Set<Integer> relevantSet = BIMModel.relevantSet;
         int R = relevantSet.size();
 
         HashMap<Integer, Double> docScores = new HashMap<>();

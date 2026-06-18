@@ -10,10 +10,10 @@ import java.util.Set;
 
 public class BIMModel {
 
-    /** Top-10 dokumen pseudo-relevant, bisa diakses model lain setelah hitungBIM() */
-    public static Set<Integer> relevantSet = new HashSet<>();
-
-    public static List<Map.Entry<Integer, Double>> hitungBIM(String query, HashMap<String, LinkedList<Posting>> invertedIndex, HashMap<Integer, String> fileIndex, int kTop) {
+    public static List<Map.Entry<Integer, Double>> hitungBIM(String query,
+            HashMap<String, LinkedList<Posting>> invertedIndex,
+            HashMap<Integer, String> fileIndex,
+            Set<Integer> relevantSet) {
         List<String> queryTerms = TextPreprocessor.getQueryClean(query);
         int N = fileIndex.size();
 
@@ -32,8 +32,8 @@ public class BIMModel {
         // Hitung skor BIM TANPA relevansi (initial ranking)
         HashMap<Integer, Double> docScores = hitungTanpaRelevansi(validTerms, invertedIndex, N);
 
-        // Hitung skor BIM DENGAN relevansi (ambil top-kTop sebagai pseudo-relevant)
-        docScores = hitungDenganRelevansi(docScores, validTerms, invertedIndex, N, kTop);
+        // Hitung skor BIM DENGAN relevansi (gunakan jawaban asli query sebagai relevant set)
+        docScores = hitungDenganRelevansi(docScores, validTerms, invertedIndex, N, relevantSet);
 
         // Urutkan dan return
         return Search.urutkanDokumen(docScores);
@@ -60,18 +60,11 @@ public class BIMModel {
     public static HashMap<Integer, Double> hitungDenganRelevansi(HashMap<Integer, Double> initialScores,
             List<String> validTerms,
             HashMap<String, LinkedList<Posting>> invertedIndex, int N,
-            int topK) {
+            Set<Integer> relevantSet) {
 
-        // Urutkan skor awal dan ambil top-K sebagai pseudo-relevant
-        List<Map.Entry<Integer, Double>> sorted = Search.urutkanDokumen(initialScores);
-        List<Integer> topKDocs = new ArrayList<>();
-        for (int i = 0; i < Math.min(topK, sorted.size()); i++) {
-            topKDocs.add(sorted.get(i).getKey());
-        }
-        int R = topKDocs.size();
+        int R = relevantSet.size();
         if (R == 0) return initialScores;
 
-        BIMModel.relevantSet = new HashSet<>(topKDocs);
         HashMap<Integer, Double> docScores = new HashMap<>();
 
         for (String term : validTerms) {

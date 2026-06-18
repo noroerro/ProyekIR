@@ -8,9 +8,11 @@ import java.util.Map;
 import java.util.Set;
 
 public class BM11Model {
-        public static List<Map.Entry<Integer, Double>> hitungBM11(String query,
-            HashMap<String, LinkedList<Posting>> invertedIndex, HashMap<Integer, String> fileIndex) {
-        
+    public static List<Map.Entry<Integer, Double>> hitungBM11(String query,
+            HashMap<String, LinkedList<Posting>> invertedIndex,
+            HashMap<Integer, String> fileIndex,
+            Set<Integer> relevantSet) {
+
         List<String> queryTerms = TextPreprocessor.getQueryClean(query);
         int N = fileIndex.size();
 
@@ -30,17 +32,17 @@ public class BM11Model {
         double lavg = Search.avgDocLength; // Rata-rata panjang dokumen (Average Document Length)
 
 
-        // Hitung skor menggunakan BM25 model
-        HashMap<Integer, Double> docScores = hitungSkor(validTerms, invertedIndex, N, k, lavg);
+        // Hitung skor menggunakan BM11 model
+        HashMap<Integer, Double> docScores = hitungSkor(validTerms, invertedIndex, N, k, lavg, relevantSet);
 
         // Urutkan dan return
         return Search.urutkanDokumen(docScores);
     }
 
     public static HashMap<Integer, Double> hitungSkor(List<String> validTerms,
-            HashMap<String, LinkedList<Posting>> invertedIndex, int N, double k, double lavg) {
+            HashMap<String, LinkedList<Posting>> invertedIndex, int N, double k, double lavg,
+            Set<Integer> relevantSet) {
 
-        Set<Integer> relevantSet = BIMModel.relevantSet;
         int R = relevantSet.size();
 
         HashMap<Integer, Double> docScores = new HashMap<>();

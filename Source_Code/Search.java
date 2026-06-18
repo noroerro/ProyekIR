@@ -4,10 +4,12 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Scanner;
+import java.util.Set;
 
 public class Search {
     // Rata-rata panjang dokumen (Average Document Length)
@@ -15,7 +17,6 @@ public class Search {
     public static HashMap<Integer, Integer> docLength = null;
 
     // Parameter eksperimen
-    private static int kTop = 10;       // Jumlah dokumen pseudo-relevant untuk BIM (top-K)
     private static int kPrecision = 10; // Nilai K untuk evaluasi Precision@K
 
     public static void main(String[] args) throws FileNotFoundException {
@@ -65,6 +66,8 @@ public class Search {
             System.out.println("==============================");
             System.out.println("1. Gunakan Query Evaluasi (Cranfield)");
             System.out.println("2. Masukkan Query Sendiri");
+            System.out.println("3. Eksperimen kPrecision (Perbandingan Model pada Precision@K)");
+            System.out.println("4. Perbandingan Keseluruhan Model (All Metrics)");
             System.out.println("-1. Keluar");
             System.out.print("\nPilih opsi: ");
             String pilihan = sc.nextLine();
@@ -74,10 +77,141 @@ public class Search {
                 break;
             }
 
+            // Eksperimen kPrecision: bandingkan Precision@K semua model
+            if (pilihan.equals("3")) {
+                int[] kValues = {5, 10, 15, 20,25};
+                System.out.println("\n==============================");
+                System.out.println("EKSPERIMEN kPrecision - Perbandingan Model");
+                System.out.println("Rata-rata dari " + queries.size() + " query");
+                System.out.println("==============================\n");
+
+                // Header tabel
+                System.out.printf("%-6s | %-10s | %-12s | %-12s | %-12s%n", "K", "BIM", "Two-Poisson", "BM25", "BM11");
+                System.out.println("-------|------------|--------------|--------------|-------------");
+
+                for (int kVal : kValues) {
+                    double totalBIM = 0, totalTP = 0, totalBM25 = 0, totalBM11 = 0;
+                    int queryCount = 0;
+
+                    for (Map.Entry<Integer, String> qEntry : queries.entrySet()) {
+                        int queryId = qEntry.getKey();
+                        String queryText = qEntry.getValue();
+                        Map<Integer, Integer> relevance;
+                        try {
+                            relevance = FileReader.bacaRelevance(queryId);
+                        } catch (FileNotFoundException e) {
+                            continue;
+                        }
+
+                        // Convert relevance map to Set<Integer> for model training
+                        Set<Integer> relevantSet = getRelevantSet(relevance);
+
+                        // Run all 4 models with ground truth relevant set
+                        List<Map.Entry<Integer, Double>> hasilBIM = BIMModel.hitungBIM(queryText, invertedIndex, fileIndex, relevantSet);
+                        List<Map.Entry<Integer, Double>> hasilTP = TwoPoissonModel.hitungTwoPoisson(queryText, invertedIndex, fileIndex, relevantSet);
+                        List<Map.Entry<Integer, Double>> hasilBM25 = BM25Model.hitungBM25(queryText, invertedIndex, fileIndex, relevantSet);
+                        List<Map.Entry<Integer, Double>> hasilBM11 = BM11Model.hitungBM11(queryText, invertedIndex, fileIndex, relevantSet);
+
+                        if (!hasilBIM.isEmpty() && !hasilTP.isEmpty() && !hasilBM25.isEmpty() && !hasilBM11.isEmpty()) {
+                            totalBIM += hitungPrecisionAtK(relevance, hasilBIM, kVal);
+                            totalTP += hitungPrecisionAtK(relevance, hasilTP, kVal);
+                            totalBM25 += hitungPrecisionAtK(relevance, hasilBM25, kVal);
+                            totalBM11 += hitungPrecisionAtK(relevance, hasilBM11, kVal);
+                            queryCount++;
+                        }
+                    }
+
+                    double avgBIM = queryCount > 0 ? totalBIM / queryCount : 0;
+                    double avgTP = queryCount > 0 ? totalTP / queryCount : 0;
+                    double avgBM25 = queryCount > 0 ? totalBM25 / queryCount : 0;
+                    double avgBM11 = queryCount > 0 ? totalBM11 / queryCount : 0;
+                    System.out.printf("%-6d | %-10.4f | %-12.4f | %-12.4f | %-12.4f%n",
+                            kVal, avgBIM, avgTP, avgBM25, avgBM11);
+                }
+                System.out.println("\nCatatan: Rata-rata dihitung dari query yang memiliki hasil di semua model.");
+                continue;
+            }
+
+            // Eksperimen 4: Perbandingan keseluruhan model
+            if (pilihan.equals("4")) {
+                System.out.println("\n==============================");
+                System.out.println("PERBANDINGAN KESELURUHAN MODEL");
+                System.out.println("Rata-rata dari " + queries.size() + " query");
+                System.out.println("==============================\n");
+
+                double totalPrecBIM = 0, totalRecallBIM = 0, totalAPBIM = 0, totalP10BIM = 0;
+                double totalPrecTP = 0, totalRecallTP = 0, totalAPTP = 0, totalP10TP = 0;
+                double totalPrecBM25 = 0, totalRecallBM25 = 0, totalAPBM25 = 0, totalP10BM25 = 0;
+                double totalPrecBM11 = 0, totalRecallBM11 = 0, totalAPBM11 = 0, totalP10BM11 = 0;
+                int count = 0;
+
+                for (Map.Entry<Integer, String> qEntry : queries.entrySet()) {
+                    int queryId = qEntry.getKey();
+                    String queryText = qEntry.getValue();
+                    Map<Integer, Integer> relevance;
+                    try {
+                        relevance = FileReader.bacaRelevance(queryId);
+                    } catch (FileNotFoundException e) {
+                        continue;
+                    }
+
+                    Set<Integer> relevantSet = getRelevantSet(relevance);
+
+                    List<Map.Entry<Integer, Double>> hasilBIM = BIMModel.hitungBIM(queryText, invertedIndex, fileIndex, relevantSet);
+                    List<Map.Entry<Integer, Double>> hasilTP = TwoPoissonModel.hitungTwoPoisson(queryText, invertedIndex, fileIndex, relevantSet);
+                    List<Map.Entry<Integer, Double>> hasilBM25 = BM25Model.hitungBM25(queryText, invertedIndex, fileIndex, relevantSet);
+                    List<Map.Entry<Integer, Double>> hasilBM11 = BM11Model.hitungBM11(queryText, invertedIndex, fileIndex, relevantSet);
+
+                    if (!hasilBIM.isEmpty() && !hasilTP.isEmpty() && !hasilBM25.isEmpty() && !hasilBM11.isEmpty()) {
+                        totalPrecBIM += hitungPrecision(relevance, hasilBIM);
+                        totalRecallBIM += hitungRecall(relevance, hasilBIM);
+                        totalAPBIM += hitung11PointAP(relevance, hasilBIM);
+                        totalP10BIM += hitungPrecisionAtK(relevance, hasilBIM, kPrecision);
+
+                        totalPrecTP += hitungPrecision(relevance, hasilTP);
+                        totalRecallTP += hitungRecall(relevance, hasilTP);
+                        totalAPTP += hitung11PointAP(relevance, hasilTP);
+                        totalP10TP += hitungPrecisionAtK(relevance, hasilTP, kPrecision);
+
+                        totalPrecBM25 += hitungPrecision(relevance, hasilBM25);
+                        totalRecallBM25 += hitungRecall(relevance, hasilBM25);
+                        totalAPBM25 += hitung11PointAP(relevance, hasilBM25);
+                        totalP10BM25 += hitungPrecisionAtK(relevance, hasilBM25, kPrecision);
+
+                        totalPrecBM11 += hitungPrecision(relevance, hasilBM11);
+                        totalRecallBM11 += hitungRecall(relevance, hasilBM11);
+                        totalAPBM11 += hitung11PointAP(relevance, hasilBM11);
+                        totalP10BM11 += hitungPrecisionAtK(relevance, hasilBM11, kPrecision);
+
+                        count++;
+                    }
+                }
+
+                // Header tabel
+                System.out.printf("%-12s | %-13s | %-12s | %-12s | %-8s%n",
+                        "Model", "Avg Precision", "Avg Recall", "Avg 11-Pt AP", "P@" + kPrecision);
+                System.out.println("-------------|---------------|--------------|--------------|---------");
+
+                if (count > 0) {
+                    System.out.printf("%-12s | %-13.4f | %-12.4f | %-12.4f | %-8.4f%n",
+                            "BIM", totalPrecBIM/count, totalRecallBIM/count, totalAPBIM/count, totalP10BIM/count);
+                    System.out.printf("%-12s | %-13.4f | %-12.4f | %-12.4f | %-8.4f%n",
+                            "Two-Poisson", totalPrecTP/count, totalRecallTP/count, totalAPTP/count, totalP10TP/count);
+                    System.out.printf("%-12s | %-13.4f | %-12.4f | %-12.4f | %-8.4f%n",
+                            "BM25", totalPrecBM25/count, totalRecallBM25/count, totalAPBM25/count, totalP10BM25/count);
+                    System.out.printf("%-12s | %-13.4f | %-12.4f | %-12.4f | %-8.4f%n",
+                            "BM11", totalPrecBM11/count, totalRecallBM11/count, totalAPBM11/count, totalP10BM11/count);
+                }
+                System.out.println("\nJumlah query yang dievaluasi: " + count);
+                System.out.println("Parameter: kPrecision = " + kPrecision);
+                continue;
+            }
+
             String query;
             Map<Integer, Integer> queryRelevance = null;
+            Set<Integer> relevantSet = new HashSet<>();
             if (pilihan.equals("1")) {
-                System.out.print("Pilih (1 - 225) untuk query evaluasi: ");
+                System.out.print("Pilih (1 - 226) untuk query evaluasi: ");
                 int queryId = Integer.parseInt(sc.nextLine().trim());
                 if (queryId > 226 || queryId < 1) {
                     System.out.println("Masukkan query yg valid!");
@@ -85,6 +219,7 @@ public class Search {
                 }
                 query = queries.get(queryId);
                 queryRelevance = FileReader.bacaRelevance(queryId);
+                relevantSet = getRelevantSet(queryRelevance);
                 System.out.println("Query yang dipilih: " + query);
             } else if (pilihan.equals("2")) {
                 System.out.print("Masukkan query: ");
@@ -93,16 +228,17 @@ public class Search {
                     System.out.println("Query tidak boleh kosong.");
                     continue;
                 }
+                System.out.println("Catatan: Query manual menggunakan empty relevant set (tanpa training).");
             } else {
                 System.out.println("Opsi tidak valid.");
                 continue;
             }
 
             System.out.println("\n==============================");
-            System.out.println("HASIL RANKING BIM Model (kTop = " + kTop + ")");
+            System.out.println("HASIL RANKING BIM Model");
             System.out.println("==============================");
             // === BIM Ranking ===
-            List<Map.Entry<Integer, Double>> hasilBIM = BIMModel.hitungBIM(query, invertedIndex, fileIndex, kTop);
+            List<Map.Entry<Integer, Double>> hasilBIM = BIMModel.hitungBIM(query, invertedIndex, fileIndex, relevantSet);
 
             // jika tidak ada dokumen yang relevan
             if (hasilBIM.isEmpty()) {
@@ -136,7 +272,7 @@ public class Search {
             System.out.println("HASIL RANKING Two Poisson Model");
             System.out.println("==============================");
 
-            List<Map.Entry<Integer, Double>> hasilTwoPoisson = TwoPoissonModel.hitungTwoPoisson(query, invertedIndex, fileIndex);
+            List<Map.Entry<Integer, Double>> hasilTwoPoisson = TwoPoissonModel.hitungTwoPoisson(query, invertedIndex, fileIndex, relevantSet);
 
             if (hasilTwoPoisson.isEmpty()) {
                 System.out.println("Tidak ada dokumen yang relevan dengan query.");
@@ -169,7 +305,7 @@ public class Search {
             System.out.println("HASIL RANKING BM25");
             System.out.println("==============================");
 
-            List<Map.Entry<Integer, Double>> hasilBM25 = BM25Model.hitungBM25(query, invertedIndex, fileIndex);
+            List<Map.Entry<Integer, Double>> hasilBM25 = BM25Model.hitungBM25(query, invertedIndex, fileIndex, relevantSet);
 
             if (hasilBM25.isEmpty()) {
                 System.out.println("Tidak ada dokumen yang relevan dengan query.");
@@ -201,7 +337,7 @@ public class Search {
             System.out.println("HASIL RANKING BM11");
             System.out.println("==============================");
 
-            List<Map.Entry<Integer, Double>> hasilBM11 = BM11Model.hitungBM11(query, invertedIndex, fileIndex);
+            List<Map.Entry<Integer, Double>> hasilBM11 = BM11Model.hitungBM11(query, invertedIndex, fileIndex, relevantSet);
 
             if (hasilBM11.isEmpty()) {
                 System.out.println("Tidak ada dokumen yang relevan dengan query.");
@@ -340,5 +476,19 @@ public class Search {
         }
 
         return sumInterpolated / 11.0;
+    }
+
+    /**
+     * Mengkonversi Map relevance judgments menjadi Set docId yang relevan.
+     * Dokumen dianggap relevan jika relevance score > 0.
+     */
+    private static Set<Integer> getRelevantSet(Map<Integer, Integer> relevance) {
+        Set<Integer> relevantSet = new HashSet<>();
+        for (Map.Entry<Integer, Integer> entry : relevance.entrySet()) {
+            if (entry.getValue() > 0) {
+                relevantSet.add(entry.getKey());
+            }
+        }
+        return relevantSet;
     }
 }

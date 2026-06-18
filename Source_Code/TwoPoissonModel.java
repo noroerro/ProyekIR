@@ -10,8 +10,10 @@ import java.util.Set;
 public class TwoPoissonModel {
 
     public static List<Map.Entry<Integer, Double>> hitungTwoPoisson(String query,
-            HashMap<String, LinkedList<Posting>> invertedIndex, HashMap<Integer, String> fileIndex) {
-        
+            HashMap<String, LinkedList<Posting>> invertedIndex,
+            HashMap<Integer, String> fileIndex,
+            Set<Integer> relevantSet) {
+
         List<String> queryTerms = TextPreprocessor.getQueryClean(query);
         int N = fileIndex.size();
 
@@ -30,16 +32,16 @@ public class TwoPoissonModel {
         double k = 1.5; // ini parameter k nya, bisa di tuning dengan rentang 1 <= k <= 2
 
         // Hitung skor menggunakan two poisson model
-        HashMap<Integer, Double> docScores = hitungSkor(validTerms, invertedIndex, N, k);
+        HashMap<Integer, Double> docScores = hitungSkor(validTerms, invertedIndex, N, k, relevantSet);
 
         // Urutkan dan return
         return Search.urutkanDokumen(docScores);
     }
 
     public static HashMap<Integer, Double> hitungSkor(List<String> validTerms,
-            HashMap<String, LinkedList<Posting>> invertedIndex, int N, double k) {
+            HashMap<String, LinkedList<Posting>> invertedIndex, int N, double k,
+            Set<Integer> relevantSet) {
 
-        Set<Integer> relevantSet = BIMModel.relevantSet;
         int R = relevantSet.size();
 
         HashMap<Integer, Double> docScores = new HashMap<>();
