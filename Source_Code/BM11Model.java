@@ -62,8 +62,8 @@ public class BM11Model {
                 int tf = posting.getTermFrequency();
                 int ld = Search.docLength.get(docId);
 
-                double weightBM25 = (tf * (k + 1) * wt) / (tf + (k * ld / lavg));
-                docScores.put(docId, docScores.getOrDefault(docId, 0.0) + weightBM25);
+                double weightBM11 = (tf * (k + 1) * wt) / (tf + (k * ld / lavg));
+                docScores.put(docId, docScores.getOrDefault(docId, 0.0) + weightBM11);
             }
         }
         return docScores;

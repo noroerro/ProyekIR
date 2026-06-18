@@ -14,8 +14,12 @@ public class Search {
     public static double avgDocLength = 0.0;
     public static HashMap<Integer, Integer> docLength = null;
 
+    // Parameter eksperimen
+    private static int kTop = 10;       // Jumlah dokumen pseudo-relevant untuk BIM (top-K)
+    private static int kPrecision = 10; // Nilai K untuk evaluasi Precision@K
+
     public static void main(String[] args) throws FileNotFoundException {
-        String path = "./Dokumen/cranfield"; // Path folder dokumen cranfield
+        String path = "./Dokumen/Cranfield"; // Path folder dokumen cranfield
         // I : Data Indexing
         // 1. Mendapatkan semua file yang ada di folder dokumen
         File[] files = InvertedIndex.getAllFiles(path);
@@ -75,7 +79,7 @@ public class Search {
             if (pilihan.equals("1")) {
                 System.out.print("Pilih (1 - 225) untuk query evaluasi: ");
                 int queryId = Integer.parseInt(sc.nextLine().trim());
-                if (queryId > 225 || queryId < 1) {
+                if (queryId > 226 || queryId < 1) {
                     System.out.println("Masukkan query yg valid!");
                     continue;
                 }
@@ -94,26 +98,11 @@ public class Search {
                 continue;
             }
 
-            int K = 10;
-            if (queryRelevance != null) {
-                System.out.print("Masukkan nilai K untuk Precision@K: ");
-                try {
-                    K = Integer.parseInt(sc.nextLine().trim());
-                    if (K <= 0) {
-                        System.out.println("Nilai K harus lebih besar dari 0. Menggunakan default K = 10.");
-                        K = 10;
-                    }
-                } catch (NumberFormatException e) {
-                    System.out.println("Input tidak valid. Menggunakan default K = 10.");
-                    K = 10;
-                }
-            }
-
             System.out.println("\n==============================");
-            System.out.println("HASIL RANKING BIM Model");
+            System.out.println("HASIL RANKING BIM Model (kTop = " + kTop + ")");
             System.out.println("==============================");
             // === BIM Ranking ===
-            List<Map.Entry<Integer, Double>> hasilBIM = BIMModel.hitungBIM(query, invertedIndex, fileIndex);
+            List<Map.Entry<Integer, Double>> hasilBIM = BIMModel.hitungBIM(query, invertedIndex, fileIndex, kTop);
 
             // jika tidak ada dokumen yang relevan
             if (hasilBIM.isEmpty()) {
@@ -138,7 +127,7 @@ public class Search {
                     System.out.printf("Total dokumen relevan: %d\n", hitungDokumenRelevan(queryRelevance));
                     System.out.printf("Precision: %f\n", hitungPrecision(queryRelevance, hasilBIM));
                     System.out.printf("Recall: %f\n", hitungRecall(queryRelevance, hasilBIM));
-                    System.out.printf("Precision@%d: %f\n", K, hitungPrecisionAtK(queryRelevance, hasilBIM, K));
+                    System.out.printf("Precision@%d: %f\n", kPrecision, hitungPrecisionAtK(queryRelevance, hasilBIM, kPrecision));
                     System.out.printf("11-Point AP: %f\n", hitung11PointAP(queryRelevance, hasilBIM));
                 }
             }
@@ -171,7 +160,7 @@ public class Search {
                     System.out.printf("Total dokumen relevan: %d\n", hitungDokumenRelevan(queryRelevance));
                     System.out.printf("Precision: %f\n", hitungPrecision(queryRelevance, hasilTwoPoisson));
                     System.out.printf("Recall: %f\n", hitungRecall(queryRelevance, hasilTwoPoisson));
-                    System.out.printf("Precision@%d: %f\n", K, hitungPrecisionAtK(queryRelevance, hasilTwoPoisson, K));
+                    System.out.printf("Precision@%d: %f\n", kPrecision, hitungPrecisionAtK(queryRelevance, hasilTwoPoisson, kPrecision));
                     System.out.printf("11-Point AP: %f\n", hitung11PointAP(queryRelevance, hasilTwoPoisson));
                 }
             }
@@ -203,7 +192,7 @@ public class Search {
                     System.out.printf("Total dokumen relevan: %d\n", hitungDokumenRelevan(queryRelevance));
                     System.out.printf("Precision: %f\n", hitungPrecision(queryRelevance, hasilBM25));
                     System.out.printf("Recall: %f\n", hitungRecall(queryRelevance, hasilBM25));
-                    System.out.printf("Precision@%d: %f\n", K, hitungPrecisionAtK(queryRelevance, hasilBM25, K));
+                    System.out.printf("Precision@%d: %f\n", kPrecision, hitungPrecisionAtK(queryRelevance, hasilBM25, kPrecision));
                     System.out.printf("11-Point AP: %f\n", hitung11PointAP(queryRelevance, hasilBM25));
                 }
             }
@@ -235,7 +224,7 @@ public class Search {
                     System.out.printf("Total dokumen relevan: %d\n", hitungDokumenRelevan(queryRelevance));
                     System.out.printf("Precision: %f\n", hitungPrecision(queryRelevance, hasilBM11));
                     System.out.printf("Recall: %f\n", hitungRecall(queryRelevance, hasilBM11));
-                    System.out.printf("Precision@%d: %f\n", K, hitungPrecisionAtK(queryRelevance, hasilBM11, K));
+                    System.out.printf("Precision@%d: %f\n", kPrecision, hitungPrecisionAtK(queryRelevance, hasilBM11, kPrecision));
                     System.out.printf("11-Point AP: %f\n", hitung11PointAP(queryRelevance, hasilBM11));
                 }
             }

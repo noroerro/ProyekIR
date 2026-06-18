@@ -13,7 +13,7 @@ public class BIMModel {
     /** Top-10 dokumen pseudo-relevant, bisa diakses model lain setelah hitungBIM() */
     public static Set<Integer> relevantSet = new HashSet<>();
 
-    public static List<Map.Entry<Integer, Double>> hitungBIM(String query, HashMap<String, LinkedList<Posting>> invertedIndex, HashMap<Integer, String> fileIndex) {
+    public static List<Map.Entry<Integer, Double>> hitungBIM(String query, HashMap<String, LinkedList<Posting>> invertedIndex, HashMap<Integer, String> fileIndex, int kTop) {
         List<String> queryTerms = TextPreprocessor.getQueryClean(query);
         int N = fileIndex.size();
 
@@ -32,8 +32,8 @@ public class BIMModel {
         // Hitung skor BIM TANPA relevansi (initial ranking)
         HashMap<Integer, Double> docScores = hitungTanpaRelevansi(validTerms, invertedIndex, N);
 
-        // Hitung skor BIM DENGAN relevansi (ambil top-10 sebagai pseudo-relevant)
-        docScores = hitungDenganRelevansi(docScores, validTerms, invertedIndex, N, 10);
+        // Hitung skor BIM DENGAN relevansi (ambil top-kTop sebagai pseudo-relevant)
+        docScores = hitungDenganRelevansi(docScores, validTerms, invertedIndex, N, kTop);
 
         // Urutkan dan return
         return Search.urutkanDokumen(docScores);
