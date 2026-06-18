@@ -12,33 +12,25 @@ import java.util.Scanner;
  */
 public class InvertedIndex {
 
-    /**
-     * Mendapatkan daftar file di dalam direktori dokumen.
-     *
-     * @param path path direktori dokumen
-     * @return array dari file-file dokumen
-     */
-    public static File[] getAllFiles(String path) {
-        File folder = new File(path);
-        return folder.listFiles();
-    }
+    /** Path folder dokumen Cranfield */
+    public static final String DOC_PATH = "./Dokumen/Cranfield";
 
     /**
      * Membuat Inverted Index beserta perhitungan Term Frequency (TF) dan Document
      * Length.
      *
-     * @param files     array dari file-file dokumen yang akan diindeks
+     * @param path      path direktori dokumen
      * @param fileIndex peta (map) untuk menyimpan pemetaan ID dokumen ke nama file
      * @param docLength peta (map) untuk menyimpan panjang setiap dokumen
      * @return inverted index yang memetakan setiap term ke daftar posting-nya
      * @throws FileNotFoundException jika file dokumen tidak ditemukan
      */
-    public static HashMap<String, LinkedList<Posting>> createInvertedIndex(File[] files,
-            HashMap<Integer, String> fileIndex, HashMap<Integer, Integer> docLength) throws FileNotFoundException {
+    public static HashMap<String, LinkedList<Posting>> createInvertedIndex(HashMap<Integer, String> fileIndex, HashMap<Integer, Integer> docLength) throws FileNotFoundException {
+        File folder = new File(DOC_PATH);
         HashMap<String, LinkedList<Posting>> invertedIndex = new HashMap<>();
         Scanner sc;
 
-        for (File file : files) {
+        for (File file : folder.listFiles()) {
             if (file.isFile() && file.getName().endsWith(".txt")) {
                 sc = new Scanner(file);
                 int docId = Integer.parseInt(file.getName().replace(".txt", ""));

@@ -14,7 +14,7 @@ import java.util.Scanner;
  *
  * Format Dokumen\TEST\query.txt:
  *   queryId \t queryText
- *   1        what similarity laws...
+ *   1  what similarity laws...
  *
  * Format Dokumen\TEST\RES\{queryId}.txt:
  *   queryId docId relevance

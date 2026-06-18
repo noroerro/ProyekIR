@@ -19,7 +19,7 @@ public class TextPreprocessor {
             "a", "an", "as", "at", "be", "by", "for", "from",
             "has", "he", "in", "is", "it", "its", "of", "on",
             "that", "the", "to", "was", "were", "will", "with",
-            "this", "which", "who", "whom", "there", "their", "and", "or", "not"));
+            "this", "which", "who", "whom", "there", "their"));
 
     /**
      * Melakukan preprocessing pada kata (lowercase, trim, dan hapus tanda baca).

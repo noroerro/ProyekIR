@@ -1,6 +1,5 @@
 package Source_Code;
 
-import java.io.File;
 import java.io.FileNotFoundException;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -18,21 +17,23 @@ public class Search {
 
     // Parameter eksperimen
     private static int kPrecision = 10; // Nilai K untuk evaluasi Precision@K
+    public static final int K_PSEUDO = 10; // Ukuran pseudo-relevant set (top-K)
+
+    /**
+     * Relevant set yang digunakan untuk scoring semua model.
+     * - Query evaluasi: berisi ground truth dari /test/res
+     * - Query sendiri: berisi pseudo-relevant (top-K dari BIM Skenario 1)
+     */
+    public static Set<Integer> activeRelevantSet = new HashSet<>();
 
     public static void main(String[] args) throws FileNotFoundException {
-        String path = "./Dokumen/Cranfield"; // Path folder dokumen cranfield
         // I : Data Indexing
-        // 1. Mendapatkan semua file yang ada di folder dokumen
-        File[] files = InvertedIndex.getAllFiles(path);
-        // 2. Membuat inverted index dari semua file yang ada di folder dokumen
         HashMap<Integer, String> fileIndex = null;
         HashMap<String, LinkedList<Posting>> invertedIndex = null;
         try {
-            // fileIndex u/ menyimpan nama file sebagai nomor
             fileIndex = new HashMap<>();
             docLength = new HashMap<>();
-            // Inverted Index
-            invertedIndex = InvertedIndex.createInvertedIndex(files, fileIndex, docLength);
+            invertedIndex = InvertedIndex.createInvertedIndex(fileIndex, docLength);
 
             // Menghitung Rata-rata Panjang Dokumen (Average Document Length)
             double totalLength = 0;
@@ -61,9 +62,9 @@ public class Search {
         // Scanner untuk query yang ingin dicari
         Scanner sc = new Scanner(System.in);
         while (true) {
-            System.out.println("\n==============================");
+            System.out.println("\n------------------------------------");
             System.out.println("MENU QUERY");
-            System.out.println("==============================");
+            System.out.println("------------------------------------");
             System.out.println("1. Gunakan Query Evaluasi (Cranfield)");
             System.out.println("2. Masukkan Query Sendiri");
             System.out.println("3. Eksperimen kPrecision (Perbandingan Model pada Precision@K)");
@@ -80,10 +81,10 @@ public class Search {
             // Eksperimen kPrecision: bandingkan Precision@K semua model
             if (pilihan.equals("3")) {
                 int[] kValues = {5, 10, 15, 20,25};
-                System.out.println("\n==============================");
+                System.out.println("\n------------------------------------");
                 System.out.println("EKSPERIMEN kPrecision - Perbandingan Model");
                 System.out.println("Rata-rata dari " + queries.size() + " query");
-                System.out.println("==============================\n");
+                System.out.println("------------------------------------\n");
 
                 // Header tabel
                 System.out.printf("%-6s | %-10s | %-12s | %-12s | %-12s%n", "K", "BIM", "Two-Poisson", "BM25", "BM11");
@@ -134,10 +135,10 @@ public class Search {
 
             // Eksperimen 4: Perbandingan keseluruhan model
             if (pilihan.equals("4")) {
-                System.out.println("\n==============================");
+                System.out.println("\n------------------------------------");
                 System.out.println("PERBANDINGAN KESELURUHAN MODEL");
                 System.out.println("Rata-rata dari " + queries.size() + " query");
-                System.out.println("==============================\n");
+                System.out.println("------------------------------------\n");
 
                 double totalPrecBIM = 0, totalRecallBIM = 0, totalAPBIM = 0, totalP10BIM = 0;
                 double totalPrecTP = 0, totalRecallTP = 0, totalAPTP = 0, totalP10TP = 0;
@@ -209,8 +210,9 @@ public class Search {
 
             String query;
             Map<Integer, Integer> queryRelevance = null;
-            Set<Integer> relevantSet = new HashSet<>();
+
             if (pilihan.equals("1")) {
+                // Query Evaluasi (gunakan ground truth)
                 System.out.print("Pilih (1 - 226) untuk query evaluasi: ");
                 int queryId = Integer.parseInt(sc.nextLine().trim());
                 if (queryId > 226 || queryId < 1) {
@@ -219,26 +221,34 @@ public class Search {
                 }
                 query = queries.get(queryId);
                 queryRelevance = FileReader.bacaRelevance(queryId);
-                relevantSet = getRelevantSet(queryRelevance);
+                activeRelevantSet = getRelevantSet(queryRelevance);
                 System.out.println("Query yang dipilih: " + query);
             } else if (pilihan.equals("2")) {
+                // Query Sendiri (gunakan pseudo-relevance)
                 System.out.print("Masukkan query: ");
                 query = sc.nextLine();
                 if (query.trim().isEmpty()) {
                     System.out.println("Query tidak boleh kosong.");
                     continue;
                 }
-                System.out.println("Catatan: Query manual menggunakan empty relevant set (tanpa training).");
+
+                // Hitung skor awal tanpa relevansi
+                int N = fileIndex.size();
+                HashMap<Integer, Double> initialScores = BIMModel.hitungSkorTanpaRelevansi(query, invertedIndex, N);
+
+                // Ambil top-K sebagai pseudo-relevant
+                List<Map.Entry<Integer, Double>> topKList = Search.urutkanDokumen(initialScores);
+                activeRelevantSet = BIMModel.getTopKDocs(topKList, K_PSEUDO);
             } else {
                 System.out.println("Opsi tidak valid.");
                 continue;
             }
 
-            System.out.println("\n==============================");
+            System.out.println("\n------------------------------------");
             System.out.println("HASIL RANKING BIM Model");
-            System.out.println("==============================");
+            System.out.println("------------------------------------");
             // === BIM Ranking ===
-            List<Map.Entry<Integer, Double>> hasilBIM = BIMModel.hitungBIM(query, invertedIndex, fileIndex, relevantSet);
+            List<Map.Entry<Integer, Double>> hasilBIM = BIMModel.hitungBIM(query, invertedIndex, fileIndex, activeRelevantSet);
 
             // jika tidak ada dokumen yang relevan
             if (hasilBIM.isEmpty()) {
@@ -268,11 +278,11 @@ public class Search {
                 }
             }
 
-            System.out.println("\n==============================");
+            System.out.println("\n------------------------------------");
             System.out.println("HASIL RANKING Two Poisson Model");
-            System.out.println("==============================");
+            System.out.println("------------------------------------");
 
-            List<Map.Entry<Integer, Double>> hasilTwoPoisson = TwoPoissonModel.hitungTwoPoisson(query, invertedIndex, fileIndex, relevantSet);
+            List<Map.Entry<Integer, Double>> hasilTwoPoisson = TwoPoissonModel.hitungTwoPoisson(query, invertedIndex, fileIndex, activeRelevantSet);
 
             if (hasilTwoPoisson.isEmpty()) {
                 System.out.println("Tidak ada dokumen yang relevan dengan query.");
@@ -301,11 +311,11 @@ public class Search {
                 }
             }
 
-            System.out.println("\n==============================");
+            System.out.println("\n------------------------------------");
             System.out.println("HASIL RANKING BM25");
-            System.out.println("==============================");
+            System.out.println("------------------------------------");
 
-            List<Map.Entry<Integer, Double>> hasilBM25 = BM25Model.hitungBM25(query, invertedIndex, fileIndex, relevantSet);
+            List<Map.Entry<Integer, Double>> hasilBM25 = BM25Model.hitungBM25(query, invertedIndex, fileIndex, activeRelevantSet);
 
             if (hasilBM25.isEmpty()) {
                 System.out.println("Tidak ada dokumen yang relevan dengan query.");
@@ -333,11 +343,11 @@ public class Search {
                 }
             }
 
-            System.out.println("\n==============================");
+            System.out.println("\n------------------------------------");
             System.out.println("HASIL RANKING BM11");
-            System.out.println("==============================");
+            System.out.println("------------------------------------");
 
-            List<Map.Entry<Integer, Double>> hasilBM11 = BM11Model.hitungBM11(query, invertedIndex, fileIndex, relevantSet);
+            List<Map.Entry<Integer, Double>> hasilBM11 = BM11Model.hitungBM11(query, invertedIndex, fileIndex, activeRelevantSet);
 
             if (hasilBM11.isEmpty()) {
                 System.out.println("Tidak ada dokumen yang relevan dengan query.");

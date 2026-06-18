@@ -29,24 +29,34 @@ public class BIMModel {
             return new ArrayList<>();
         }
 
-        // Hitung skor BIM TANPA relevansi (initial ranking)
-        HashMap<Integer, Double> docScores = hitungTanpaRelevansi(validTerms, invertedIndex, N);
+        // Hitung skor BIM menggunakan relevant set (ground truth atau pseudo-relevant)
+        HashMap<Integer, Double> docScores = hitungRSV(validTerms, invertedIndex, N, relevantSet);
 
-        // Hitung skor BIM DENGAN relevansi (gunakan jawaban asli query sebagai relevant set)
-        docScores = hitungDenganRelevansi(docScores, validTerms, invertedIndex, N, relevantSet);
-
-        // Urutkan dan return
         return Search.urutkanDokumen(docScores);
     }
 
-    public static HashMap<Integer, Double> hitungTanpaRelevansi(List<String> queryTerms,
+    /**
+     * Hitung skor BIM Skenario 1 untuk pseudo-relevance set.
+     * Weight = log10(N / df)
+     */
+    public static HashMap<Integer, Double> hitungSkorTanpaRelevansi(String query,
             HashMap<String, LinkedList<Posting>> invertedIndex, int N) {
 
+        List<String> queryTerms = TextPreprocessor.getQueryClean(query);
         HashMap<Integer, Double> docScores = new HashMap<>();
 
+        // Filter hanya term yang ada di index
+        List<String> validTerms = new ArrayList<>();
         for (String term : queryTerms) {
-            int nt = invertedIndex.get(term).size();
-            double weight = skorTanpaRelevansi(N, nt);
+            if (invertedIndex.containsKey(term)) {
+                validTerms.add(term);
+            }
+        }
+
+        for (String term : validTerms) {
+            int df = invertedIndex.get(term).size();
+            if (df == 0) continue;
+            double weight = Math.log10((double) N / df);
 
             for (Posting posting : invertedIndex.get(term)) {
                 int docId = posting.getDocId();
@@ -57,15 +67,29 @@ public class BIMModel {
         return docScores;
     }
 
-    public static HashMap<Integer, Double> hitungDenganRelevansi(HashMap<Integer, Double> initialScores,
-            List<String> validTerms,
+    /**
+     * Ambil top-K dokumen dari sorted list sebagai pseudo-relevant set.
+     */
+    public static Set<Integer> getTopKDocs(List<Map.Entry<Integer, Double>> sortedDocs, int k) {
+        Set<Integer> topK = new HashSet<>();
+        for (int i = 0; i < Math.min(k, sortedDocs.size()); i++) {
+            topK.add(sortedDocs.get(i).getKey());
+        }
+        return topK;
+    }
+
+    /**
+     * Hitung RSV (Retrieval Status Value) menggunakan pt dan ut dari ground truth.
+     */
+    public static HashMap<Integer, Double> hitungRSV(List<String> validTerms,
             HashMap<String, LinkedList<Posting>> invertedIndex, int N,
             Set<Integer> relevantSet) {
 
-        int R = relevantSet.size();
-        if (R == 0) return initialScores;
-
         HashMap<Integer, Double> docScores = new HashMap<>();
+        int R = relevantSet.size();
+
+        // Jika tidak ada dokumen relevan, return empty
+        if (R == 0) return docScores;
 
         for (String term : validTerms) {
             int df = invertedIndex.get(term).size();
@@ -77,7 +101,7 @@ public class BIMModel {
             // Hindari log(0) atau pembagian nol
             if (pt <= 0 || pt >= 1 || ut <= 0 || ut >= 1) continue;
 
-            double weight = Math.log10((pt / ut));
+            double weight = Math.log10(pt / ut);
 
             for (Posting posting : invertedIndex.get(term)) {
                 int docId = posting.getDocId();
@@ -88,12 +112,7 @@ public class BIMModel {
         return docScores;
     }
 
-
-    private static double skorTanpaRelevansi(int N, int nt) {
-        if (nt == 0) return 0;
-        return Math.log10((double) N / nt);
-    }
-    // Hitung jumlah dokumen yang memuat term dan juga dalam relevant set
+    /** Hitung jumlah dokumen yang memuat term dan juga dalam relevant set */
     private static int countDocsInSet(String term,
             HashMap<String, LinkedList<Posting>> invertedIndex,
             Set<Integer> relevantSet) {
