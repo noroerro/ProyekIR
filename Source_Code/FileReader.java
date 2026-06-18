@@ -4,10 +4,12 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Scanner;
+import java.util.Set;
 
 /**
  * Membaca file query evaluasi dan relevance judgments dari dataset Cranfield.
@@ -63,12 +65,8 @@ public class FileReader {
      * @throws FileNotFoundException jika file relevance tidak ditemukan
      */
     public static Map<Integer, Integer> bacaRelevance(int queryId) throws FileNotFoundException {
-        return bacaRelevance(queryId, RES_PATH);
-    }
-
-    private static Map<Integer, Integer> bacaRelevance(int queryId, String resPath) throws FileNotFoundException {
         Map<Integer, Integer> relevance = new HashMap<>();
-        File file = new File(resPath + File.separator + queryId + ".txt");
+        File file = new File(RES_PATH + File.separator + queryId + ".txt");
 
         Scanner sc = new Scanner(file);
         while (sc.hasNextLine()) {
@@ -88,20 +86,20 @@ public class FileReader {
     }
 
     /**
-     * Mendapatkan daftar docId yang relevan (relevance > 0) untuk suatu query.
+     * Mendapatkan Set docId yang relevan (relevance > 0) untuk suatu query.
      *
      * @param queryId ID query
-     * @return List docId yang relevan
+     * @return Set docId yang relevan
      * @throws FileNotFoundException jika file relevance tidak ditemukan
      */
-    public static List<Integer> getDokumenRelevan(int queryId) throws FileNotFoundException {
+    public static Set<Integer> getRelevantSet(int queryId) throws FileNotFoundException {
         Map<Integer, Integer> relevance = bacaRelevance(queryId);
-        List<Integer> docIds = new ArrayList<>();
+        Set<Integer> relevantSet = new HashSet<>();
         for (Map.Entry<Integer, Integer> entry : relevance.entrySet()) {
             if (entry.getValue() > 0) {
-                docIds.add(entry.getKey());
+                relevantSet.add(entry.getKey());
             }
         }
-        return docIds;
+        return relevantSet;
     }
 }
