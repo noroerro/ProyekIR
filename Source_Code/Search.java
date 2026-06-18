@@ -12,6 +12,7 @@ import java.util.Scanner;
 public class Search {
     // Rata-rata panjang dokumen (Average Document Length)
     public static double avgDocLength = 0.0;
+    public static HashMap<Integer, Integer> docLength = null;
 
     public static void main(String[] args) throws FileNotFoundException {
         String path = "./Dokumen/cranfield"; // Path folder dokumen cranfield
@@ -21,7 +22,6 @@ public class Search {
         // 2. Membuat inverted index dari semua file yang ada di folder dokumen
         HashMap<Integer, String> fileIndex = null;
         HashMap<String, LinkedList<Posting>> invertedIndex = null;
-        HashMap<Integer, Integer> docLength = null;
         try {
             // fileIndex u/ menyimpan nama file sebagai nomor
             fileIndex = new HashMap<>();
@@ -147,7 +147,7 @@ public class Search {
             System.out.println("HASIL RANKING Two Poisson Model");
             System.out.println("==============================");
 
-            List<Map.Entry<Integer, Double>> hasilTwoPoisson = hitungTwoPoisson(query, invertedIndex, fileIndex);
+            List<Map.Entry<Integer, Double>> hasilTwoPoisson = TwoPoissonModel.hitungTwoPoisson(query, invertedIndex, fileIndex);
 
             if (hasilTwoPoisson.isEmpty()) {
                 System.out.println("Tidak ada dokumen yang relevan dengan query.");
@@ -180,7 +180,7 @@ public class Search {
             System.out.println("HASIL RANKING BM25");
             System.out.println("==============================");
 
-            List<Map.Entry<Integer, Double>> hasilBM25 = hitungBM25(query, invertedIndex, fileIndex, docLength);
+            List<Map.Entry<Integer, Double>> hasilBM25 = BM25Model.hitungBM25(query, invertedIndex, fileIndex);
 
             if (hasilBM25.isEmpty()) {
                 System.out.println("Tidak ada dokumen yang relevan dengan query.");
@@ -237,6 +237,28 @@ public class Search {
                     System.out.printf("Recall: %f\n", hitungRecall(queryRelevance, hasilBM11));
                     System.out.printf("Precision@%d: %f\n", K, hitungPrecisionAtK(queryRelevance, hasilBM11, K));
                     System.out.printf("11-Point AP: %f\n", hitung11PointAP(queryRelevance, hasilBM11));
+                }
+            }
+
+            System.out.println("\n==============================");
+            System.out.println("HASIL RANKING BM11");
+            System.out.println("==============================");
+
+            List<Map.Entry<Integer, Double>> hasilBM11 = BM11Model.hitungBM11(query, invertedIndex, fileIndex);
+
+            if (hasilBM11.isEmpty()) {
+                System.out.println("Tidak ada dokumen yang relevan dengan query.");
+            } else {
+                int peringkat = 1;
+                for (Map.Entry<Integer, Double> entry : hasilBM11) {
+                    if (peringkat > 5) break;
+
+                    int docId = entry.getKey();
+                    double skor = entry.getValue();
+                    String namaFile = fileIndex.get(docId);
+
+                    System.out.printf("%d. %s (Skor: %.4f)\n", peringkat, namaFile, skor);
+                    peringkat++;
                 }
             }
         }
